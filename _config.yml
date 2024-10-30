@@ -1,0 +1,18 @@
+# Site settings
+title: Ostap Hembara Blog
+email: 
+description: ""
+baseurl: ""
+url: "http://ostapagon.github.io"
+twitter_username: ostapagon_
+github_username:  ostapagon
+
+# Build settings
+markdown: kramdown
+permalink: pretty
+
+highlighter: rouge
+kramdown:
+  input: GFM
+  auto_ids: true
+  syntax_highlighter: rouge
