@@ -63,18 +63,18 @@ For people who can read this high level math here is some brief anotation:
 
 For other people who want to see light in the end of this chapter lets first understand concept of basis functions and where they used. Imagine we have a function to approximate:
 
-   $$\phi_{t}(x) = x$$
+   $$\varphi_{t}(x) = x$$
 
 This is one of the simplest functions we\`ve studied back in school. As our basis let\`s choose periodic function:
 
 $$
-   \phi_n(x) = sin(nx), n=1,2,3,...
+   \varphi_n(x) = sin(nx), n=1,2,3,...
 $$
 
-Our goal is to approximate $\phi_{t}$ as a linear combination of these basis functions:
+Our goal is to approximate $\varphi_{t}$ as a linear combination of these basis functions:
 
 $$
-\phi_{t}(x) \approx a_0 \phi_0(x) + a_1 \phi_1(2x) + a_2 \phi_2(3x) + ... + a_n \phi_n(nx)
+\varphi_{t}(x) \approx a_0 \varphi_0(x) + a_1 \varphi_1(2x) + a_2 \varphi_2(3x) + ... + a_n \varphi_n(nx)
 $$
 
 The process of finding coefficients $a_0, a_1, a_2, ...$ is called the Fourier Series Expansion. It works by decomposing the target function into a sum of sine and cosine functions(in our example we use only sine functions) - **orthogonal basis functions**—and finding the coefficients by projecting the target function onto each basis function through integration. For sake of simplicity we consider interval $x \in [-\pi, \pi]$. We won\`t go into details towards how this coefficients is found, but lets see how with each new basis added we getting better approximation of our target function Im.
@@ -83,17 +83,17 @@ The process of finding coefficients $a_0, a_1, a_2, ...$ is called the Fourier S
 <p align="center">
   <img src="/assets/sh_lighting_pytorch3d/tar_annot.png" alt="Image 1" width="400"/>
 </p>
-<p align="center">Target function: $$\phi_{t}(x) = 2\sin(x)$$</p>
+<p align="center">Target function: $$\varphi_{t}(x) = 2\sin(x)$$</p>
 
-Using the Fourier Series Expansion we can find out first coefficient $a_0=2$, so our $\phi_0(x) = 2sin(x)$. As we can see on the image bellow $\phi_0(x)$ is doing a bit poor job approximating our target function. Let\`s throw into the mix second basis function $\phi_1(x) = sin(2x)$ and see how it will improve our approximation. The second order approximation is $\phi_1(x) = 2sin(x) - sin(2x)$. The countour of the function is getting closer to our target function.
+Using the Fourier Series Expansion we can find out first coefficient $a_0=2$, so our $\varphi_0(x) = 2sin(x)$. As we can see on the image bellow $\varphi_0(x)$ is doing a bit poor job approximating our target function. Let\`s throw into the mix second basis function $\varphi_1(x) = sin(2x)$ and see how it will improve our approximation. The second order approximation is $\varphi_1(x) = 2sin(x) - sin(2x)$. The countour of the function is getting closer to our target function.
 <!-- Row 2: Two images -->
 <p align="center">
   <img src="/assets/sh_lighting_pytorch3d/approx0_annot.png" alt="Image 2" width="300"/>
   <img src="/assets/sh_lighting_pytorch3d/approx1_annot.png" alt="Image 3" width="300"/>
 </p>
-<p align="center">First approximation: $$\phi_0(x) = 2\sin(x)$$ &nbsp;&nbsp;&nbsp;&nbsp; Second approximation: $$\phi_1(x) = 2\sin(x) - \sin(2x)$$</p>
+<p align="center">First approximation: $$\varphi_0(x) = 2\sin(x)$$ &nbsp;&nbsp;&nbsp;&nbsp; Second approximation: $$\varphi_1(x) = 2\sin(x) - \sin(2x)$$</p>
 
-Step by step adding new basis $\phi_2, \phi_3, \phi_4$ with coefficients $a_2=\frac{1}{2}, a_3=-\frac{1}{2}, a_4=\frac{2}{5}$ we getting better and better approximation of our target function. Each approximation occilates more frequently around the target function making approximation more accurate.
+Step by step adding new basis $\varphi_2, \varphi_3, \varphi_4$ with coefficients $a_2=\frac{1}{2}, a_3=-\frac{1}{2}, a_4=\frac{2}{5}$ we getting better and better approximation of our target function. Each approximation occilates more frequently around the target function making approximation more accurate.
 <!-- Row 3: Two images -->
 <p align="center">
   <img src="/assets/sh_lighting_pytorch3d/approx2_annot.png" alt="Image 4" width="300"/>
@@ -101,7 +101,7 @@ Step by step adding new basis $\phi_2, \phi_3, \phi_4$ with coefficients $a_2=\f
   <img src="/assets/sh_lighting_pytorch3d/approx4_annot.png" alt="Image 5" width="300"/>
 
 </p>
-<p align="center">Next order approximations: $\phi_3(x)$, $\phi_4(x)$, $\phi_5(x)$</p>
+<p align="center">Next order approximations: $\varphi_3(x)$, $\varphi_4(x)$, $\varphi_5(x)$</p>
 
 $$
 \text{Full equations for each approximation step:} \\
@@ -109,11 +109,11 @@ $$
 
 $$
 \begin{align*}
-\phi_0(x) &= 2\sin(x) \\
-\phi_1(x) &= 2\sin(x) - \sin(2x) \\
-\phi_2(x) &= 2\sin(x) - \sin(2x) + \frac{1}{2}\sin(3x) \\
-\phi_3(x) &= 2\sin(x) - \sin(2x) + \frac{1}{2}\sin(3x) - \frac{1}{2}\sin(4x) \\
-\phi_4(x) &= 2\sin(x) - \sin(2x) + \frac{1}{2}\sin(3x) - \frac{1}{2}\sin(4x) + \frac{2}{5}\sin(5x)
+\varphi_0(x) &= 2\sin(x) \\
+\varphi_1(x) &= 2\sin(x) - \sin(2x) \\
+\varphi_2(x) &= 2\sin(x) - \sin(2x) + \frac{1}{2}\sin(3x) \\
+\varphi_3(x) &= 2\sin(x) - \sin(2x) + \frac{1}{2}\sin(3x) - \frac{1}{2}\sin(4x) \\
+\varphi_4(x) &= 2\sin(x) - \sin(2x) + \frac{1}{2}\sin(3x) - \frac{1}{2}\sin(4x) + \frac{2}{5}\sin(5x)
 \end{align*}
 $$
 
@@ -129,13 +129,13 @@ On the image above you can observe different SH bands. With each new degree $l$ 
 
 **Direct Evaluation** - having a direction represented as two angles ($θ$(polar), $φ$(azimuthal)) just throw in coefficients and input angles into the equation and receive lighting value.
 
-**Precompute Environment Map** - at first generate a grid of ($\theta - [0, \pi], \phi - [0, 2\pi]$). The resolution of Environment Map is up to you and controlled by sampling density. Then for each grid points we calculate a light value using SH coefficients and get Environment Map as 2d image which we can observe, interprete and analyze.
+**Precompute Environment Map** - at first generate a grid of ($\theta - [0, \pi], \varphi - [0, 2\pi]$). The resolution of Environment Map is up to you and controlled by sampling density. Then for each grid points we calculate a light value using SH coefficients and get Environment Map as 2d image which we can observe, interprete and analyze.
 
 **Direct Evaluation** is more suitable for real-time applications where we need to compute lighting for each point on the fly. **Precompute Environment Map** is more suitable for offline rendering tasks where we can afford to preprocess the lighting data and use it for real-time rendering. In our case we will focus on the second approach as its more visual and suitable for understanding.
 
 At this point, all we want is to hide these SH equations inside the class which do everything, so we don\`t need to think about what\`s going on there ever again.
 
-First step is create small function to set the resolution for the environment map and compute $\theta$ and $\phi$ grids. There is a little trick here with adding 0.5 to the uv grid during remapping from $[0,res]$ to $[0, \pi]$ and $[0, 2\pi]$. This is done, so we calculate SH values for the center of each pixel, not for the corner.
+First step is create small function to set the resolution for the environment map and compute $\theta$ and $\varphi$ grids. There is a little trick here with adding 0.5 to the uv grid during remapping from $[0,res]$ to $[0, \pi]$ and $[0, 2\pi]$. This is done, so we calculate SH values for the center of each pixel, not for the corner.
 ```python
 def set_environment_map_resolution(self, res):
   """ Step 1: Set the resolution for the environment map and compute theta and phi grids """
@@ -258,11 +258,11 @@ When light interacts with the surface of an object, it can be reflected in diffe
 
 To sample values from Environment Map for specular reflection use $R_{\text{out}}$ direction and for diffuse reflection use normal $N$. Now the question is how having 2 direction vectors get light values from 2D map images. It is actually quite simple:
 
-1. Convert $(x,y,z)$ euclidian direction vector to spherical coordinates ($\theta, \phi$);
-2. Normalize $\theta$ and $\phi$ to uv coordinates in $[0, 1]$ range;
+1. Convert $(x,y,z)$ euclidian direction vector to spherical coordinates ($\theta, \varphi$);
+2. Normalize $\theta$ and $\varphi$ to uv coordinates in $[0, 1]$ range;
 3. Use uv coordinates to sample lighting value from the Environment Map.
 
-In this code we skipping $\theta$ and $\phi$ conversion and directly convert $(x,y,z)$ to uv coordinates. $[-1, 1]$ range is needed as `torch.nn.functional.grid_sample` expects input mapped in this range.
+In this code we skipping $\theta$ and $\varphi$ conversion and directly convert $(x,y,z)$ to uv coordinates. $[-1, 1]$ range is needed as `torch.nn.functional.grid_sample` expects input mapped in this range.
 ```python
 def _convert_to_uv(self, directions):
     # Calculate the square of each component (x, y, z+1)
