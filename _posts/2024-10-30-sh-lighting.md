@@ -1,10 +1,10 @@
 ---
 layout: post
-comments: true
+comments: false
 title: "Spherical Harmonics for Environment Map Lighting in PyTorch3D"
 excerpt: ""
 date:   2024-10-30 07:00:00
-mathjax: false
+mathjax: true
 ---
 
 <style>
@@ -137,13 +137,13 @@ At this point, all we want is to hide these SH equations inside the class which 
 
 First step is create small function to set the resolution for the environment map and compute $\theta$ and $\phi$ grids. There is a little trick here with adding 0.5 to the uv grid during remapping from $[0,res]$ to $[0, \pi]$ and $[0, 2\pi]$. This is done, so we calculate SH values for the center of each pixel, not for the corner.
 ```python
-   def set_environment_map_resolution(self, res):
-      """ Step 1: Set the resolution for the environment map and compute theta and phi grids """
-      res = (res, res)
-      self.resolution = res
-      uv = np.mgrid[0:res[1], 0:res[0]].astype(np.float32)  # ranges [0, res]
-      self.theta = torch.from_numpy((math.pi / res[1]) * (uv[1, :, :] + 0.5)).to(self.device)  # Theta ranges from [0, pi]
-      self.phi = torch.from_numpy((2 * math.pi / res[0]) * (uv[0, :, :] + 0.5)).to(self.device)  # Phi ranges from [0, 2*pi]
+def set_environment_map_resolution(self, res):
+  """ Step 1: Set the resolution for the environment map and compute theta and phi grids """
+  res = (res, res)
+  self.resolution = res
+  uv = np.mgrid[0:res[1], 0:res[0]].astype(np.float32)  # ranges [0, res]
+  self.theta = torch.from_numpy((math.pi / res[1]) * (uv[1, :, :] + 0.5)).to(self.device)  # Theta ranges from [0, pi]
+  self.phi = torch.from_numpy((2 * math.pi / res[0]) * (uv[0, :, :] + 0.5)).to(self.device)  # Phi ranges from [0, 2*pi]
 ```
 
 Second step is to write a function to calculate associated Legendre polynomials. They have recursive relationship which we can use to compute them. Code for this is kind of counterintuitive, but it follows the definition $P_l^m$.
@@ -153,31 +153,31 @@ Second step is to write a function to calculate associated Legendre polynomials.
 <p align="center">Associated Legendre polynomial</p>
 
 ```python
-    def compute_associated_legendre_polynomial(self, l, m, x):
-        """ Step 2: Compute the associated Legendre polynomial P_l^m(x) """
-        # P_m^m(x): Base case for the recursion, where l == m
-        pmm = torch.ones_like(x)
-        if m > 0:
-            somx2 = torch.sqrt((1 - x) * (1 + x))  # sqrt((1 - x) * (1 + x))
-            fact = 1.0
-            for i in range(1, m + 1):
-                pmm = pmm * (-fact) * somx2  # Recursively compute P_m^m(x)
-                fact += 2.0
-        if l == m:
-            return pmm
-        
-        # P_m^(m+1)(x): Next step in the recursion
-        pmmp1 = x * (2.0 * m + 1.0) * pmm
-        if l == m + 1:
-            return pmmp1
-        
-        # P_l^m(x): General case for l > m
-        pll = torch.zeros_like(x)
-        for ll in range(m + 2, l + 1):
-            pll = ((2.0 * ll - 1.0) * x * pmmp1 - (ll + m - 1.0) * pmm) / (ll - m)  # Recurrence relation
-            pmm = pmmp1
-            pmmp1 = pll
-        return pll
+def compute_associated_legendre_polynomial(self, l, m, x):
+    """ Step 2: Compute the associated Legendre polynomial P_l^m(x) """
+    # P_m^m(x): Base case for the recursion, where l == m
+    pmm = torch.ones_like(x)
+    if m > 0:
+        somx2 = torch.sqrt((1 - x) * (1 + x))  # sqrt((1 - x) * (1 + x))
+        fact = 1.0
+        for i in range(1, m + 1):
+            pmm = pmm * (-fact) * somx2  # Recursively compute P_m^m(x)
+            fact += 2.0
+    if l == m:
+        return pmm
+    
+    # P_m^(m+1)(x): Next step in the recursion
+    pmmp1 = x * (2.0 * m + 1.0) * pmm
+    if l == m + 1:
+        return pmmp1
+    
+    # P_l^m(x): General case for l > m
+    pll = torch.zeros_like(x)
+    for ll in range(m + 2, l + 1):
+        pll = ((2.0 * ll - 1.0) * x * pmmp1 - (ll + m - 1.0) * pmm) / (ll - m)  # Recurrence relation
+        pmm = pmmp1
+        pmmp1 = pll
+    return pll
 ```
 <p align="center">
   <img src="/assets/sh_lighting_pytorch3d/norm_factor.png" alt="Image 5" width="300"/>
@@ -190,42 +190,42 @@ Second step is to write a function to calculate associated Legendre polynomials.
 <p align="center">Fourth step: Spherical harmonic formula</p>
 
 ```python
-    def compute_normalization_factor(self, l, m):
-        """ Step 3 Compute the normalization factor for the spherical harmonic function """
-        # Normalization factor to ensure orthonormality of the spherical harmonics
-        numerator = (2.0 * l + 1.0) * math.factorial(l - m)
-        denominator = 4 * math.pi * math.factorial(l + m)
-        return math.sqrt(numerator / denominator)
+def compute_normalization_factor(self, l, m):
+    """ Step 3 Compute the normalization factor for the spherical harmonic function """
+    # Normalization factor to ensure orthonormality of the spherical harmonics
+    numerator = (2.0 * l + 1.0) * math.factorial(l - m)
+    denominator = 4 * math.pi * math.factorial(l + m)
+    return math.sqrt(numerator / denominator)
 
-    def evaluate_spherical_harmonic(self, l, m, theta, phi):
-        """ Step 4: Evaluate the spherical harmonic function Y_l^m for given theta and phi """
-        # Evaluate Y_l^m based on whether m is positive, negative, or zero
-        if m == 0:
-            return self.compute_normalization_factor(l, m) * self.compute_associated_legendre_polynomial(l, m, torch.cos(theta))
-        elif m > 0:
-            return math.sqrt(2.0) * self.compute_normalization_factor(l, m) * \
-                   torch.cos(m * phi) * self.compute_associated_legendre_polynomial(l, m, torch.cos(theta))
-        else:
-            return math.sqrt(2.0) * self.compute_normalization_factor(l, -m) * \
-                   torch.sin(-m * phi) * self.compute_associated_legendre_polynomial(l, -m, torch.cos(theta))
+def evaluate_spherical_harmonic(self, l, m, theta, phi):
+    """ Step 4: Evaluate the spherical harmonic function Y_l^m for given theta and phi """
+    # Evaluate Y_l^m based on whether m is positive, negative, or zero
+    if m == 0:
+        return self.compute_normalization_factor(l, m) * self.compute_associated_legendre_polynomial(l, m, torch.cos(theta))
+    elif m > 0:
+        return math.sqrt(2.0) * self.compute_normalization_factor(l, m) * \
+                torch.cos(m * phi) * self.compute_associated_legendre_polynomial(l, m, torch.cos(theta))
+    else:
+        return math.sqrt(2.0) * self.compute_normalization_factor(l, -m) * \
+                torch.sin(-m * phi) * self.compute_associated_legendre_polynomial(l, -m, torch.cos(theta))
 ```
 
 Last but not least, we need to iterate over all basis functions and compute their values for each grid point.
 
 ```python
-    def construct_environment_map_from_sh_coeffs(self, sh_coeffs, smooth=False):
-        """Construct an environment map from the given spherical harmonic coefficients """
-        ...
-        # Loop through each band and order to compute the environment map
-        for l in range(bands):
-            for m in range(-l, l + 1):
-                sh_value = self.evaluate_spherical_harmonic(l, m, theta, phi)
-                result = result + sh_value.view(sh_value.shape[0], sh_value.shape[1], 1) * smoothed_coeffs[:, i]
-                i += 1
+def construct_environment_map_from_sh_coeffs(self, sh_coeffs, smooth=False):
+    """Construct an environment map from the given spherical harmonic coefficients """
+    ...
+    # Loop through each band and order to compute the environment map
+    for l in range(bands):
+        for m in range(-l, l + 1):
+            sh_value = self.evaluate_spherical_harmonic(l, m, theta, phi)
+            result = result + sh_value.view(sh_value.shape[0], sh_value.shape[1], 1) * smoothed_coeffs[:, i]
+            i += 1
 
-        # Ensure non-negative values in the result
-        result = torch.max(result, torch.zeros(res[0], res[1], smoothed_coeffs.shape[0], device=smoothed_coeffs.device))
-        ...
+    # Ensure non-negative values in the result
+    result = torch.max(result, torch.zeros(res[0], res[1], smoothed_coeffs.shape[0], device=smoothed_coeffs.device))
+    ...
 ```
 **TODO**: To see the whole `SphericalHarmonics` class implementation refere to the notebook code.
 With this class we can now generate environment map from the given SH coefficients, but now comes more 3D Graphics stuff.
@@ -264,26 +264,26 @@ To sample values from Environment Map for specular reflection use $R_{\text{out}
 
 In this code we skipping $\theta$ and $\phi$ conversion and directly convert $(x,y,z)$ to uv coordinates. $[-1, 1]$ range is needed as `torch.nn.functional.grid_sample` expects input mapped in this range.
 ```python
-    def _convert_to_uv(self, directions):
-        # Calculate the square of each component (x, y, z+1)
-        x2 = directions[..., 0] ** 2
-        y2 = directions[..., 1] ** 2
-        z2 = (directions[..., 2] + 1) ** 2
+def _convert_to_uv(self, directions):
+    # Calculate the square of each component (x, y, z+1)
+    x2 = directions[..., 0] ** 2
+    y2 = directions[..., 1] ** 2
+    z2 = (directions[..., 2] + 1) ** 2
 
-        # Compute the scaling factor 'm'
-        # 'm' is twice the square root of the sum of the squares of the x, y, and z+1 coordinates
-        m = 2 * torch.sqrt(x2 + y2 + z2)[..., None]
+    # Compute the scaling factor 'm'
+    # 'm' is twice the square root of the sum of the squares of the x, y, and z+1 coordinates
+    m = 2 * torch.sqrt(x2 + y2 + z2)[..., None]
 
-        # Scale the x and y coordinates by 'm' to normalize them
-        uv_directions = directions[..., :2] / m
+    # Scale the x and y coordinates by 'm' to normalize them
+    uv_directions = directions[..., :2] / m
 
-        # Shift the normalized coordinates to the [0, 1] range by adding 0.5
-        uv_directions = uv_directions + 0.5
+    # Shift the normalized coordinates to the [0, 1] range by adding 0.5
+    uv_directions = uv_directions + 0.5
 
-        # Rescale the coordinates to the [-1, 1] range
-        uv_directions = uv_directions * 2 - 1
+    # Rescale the coordinates to the [-1, 1] range
+    uv_directions = uv_directions * 2 - 1
 
-        return uv_directions
+    return uv_directions
 ```
 
 ## 4. Implementation with PyTorch3D
@@ -332,44 +332,44 @@ def diffuse(self, normals, points=None) -> torch.Tensor:
 In `EnvMapLighting.specular` method a bit more steps as at first $R_{\text{out}}$ is calculated and then converted to uv coordinates.
 
 ```python
-    def specular(self, normals, points, camera_position, shininess) -> torch.Tensor:
-        """
-        Calculate the specular component of light reflection.
+def specular(self, normals, points, camera_position, shininess) -> torch.Tensor:
+    """
+    Calculate the specular component of light reflection.
 
-        Args:
-            points: (N, ..., 3) xyz coordinates of the points.
-            normals: (N, ..., 3) xyz normal vectors for each point.
-            direction: (N, 3) vector direction of the light.
-            camera_position: (N, 3) The xyz position of the camera.
-            shininess: (N)  The specular exponent of the material.
+    Args:
+        points: (N, ..., 3) xyz coordinates of the points.
+        normals: (N, ..., 3) xyz normal vectors for each point.
+        direction: (N, 3) vector direction of the light.
+        camera_position: (N, 3) The xyz position of the camera.
+        shininess: (N)  The specular exponent of the material.
 
-        Returns:
-            colors: (N, ..., 3), same shape as the input points.
-        """
-        ...
-        normals = F.normalize(normals, p=2, dim=-1, eps=1e-6)
-        # Calculate the specular reflection.
-        view_direction = camera_position - points
-        view_direction = F.normalize(view_direction, p=2, dim=-1, eps=1e-6) # R_in
+    Returns:
+        colors: (N, ..., 3), same shape as the input points.
+    """
+    ...
+    normals = F.normalize(normals, p=2, dim=-1, eps=1e-6)
+    # Calculate the specular reflection.
+    view_direction = camera_position - points
+    view_direction = F.normalize(view_direction, p=2, dim=-1, eps=1e-6) # R_in
 
-        cos_angle = torch.sum(normals * view_direction, dim=-1)
-        # No specular highlights if angle is less than 0.
-        mask = (cos_angle > 0).to(torch.float32)
+    cos_angle = torch.sum(normals * view_direction, dim=-1)
+    # No specular highlights if angle is less than 0.
+    mask = (cos_angle > 0).to(torch.float32)
 
 
-        reflect_direction = -view_direction + 2 * (cos_angle[..., None] * normals) # R_out
-        reflect_direction = torch.nn.functional.normalize(reflect_direction, dim=-1) # R_out
+    reflect_direction = -view_direction + 2 * (cos_angle[..., None] * normals) # R_out
+    reflect_direction = torch.nn.functional.normalize(reflect_direction, dim=-1) # R_out
 
-        uv_reflect_direction = self._convert_to_uv(reflect_direction)
-        # Convert color from (B, H, W, 1, 3) to (B, 3, H, W) for sampling
-        # Convert uv reflect directions from (B, H, W, 1, 2) to (B, H, W, 2)
-        input_color = color.squeeze(-2).permute(0, 3, 1, 2)
-        grid_uv_reflect_direction = uv_reflect_direction.squeeze(-2)
+    uv_reflect_direction = self._convert_to_uv(reflect_direction)
+    # Convert color from (B, H, W, 1, 3) to (B, 3, H, W) for sampling
+    # Convert uv reflect directions from (B, H, W, 1, 2) to (B, H, W, 2)
+    input_color = color.squeeze(-2).permute(0, 3, 1, 2)
+    grid_uv_reflect_direction = uv_reflect_direction.squeeze(-2)
 
-        sampled_color = torch.nn.functional.grid_sample(input_color, grid_uv_reflect_direction, padding_mode="reflection", align_corners=False)
-        # Convert from sampled color (B, 3, H, W) to (B, H, W, 1, 3) like normals dims
-        color = sampled_color.permute(0, 2, 3, 1).unsqueeze(-2)
-        ...
+    sampled_color = torch.nn.functional.grid_sample(input_color, grid_uv_reflect_direction, padding_mode="reflection", align_corners=False)
+    # Convert from sampled color (B, 3, H, W) to (B, H, W, 1, 3) like normals dims
+    color = sampled_color.permute(0, 2, 3, 1).unsqueeze(-2)
+    ...
 ```
 
 The **shininess** parameter in the `EnvMapLighting.specular` method controls the sharpness and intensity of the specular highlights on a surface. It is a fundamental part of the Phong reflection model, which is widely used to simulate how light reflects off a surface.
