@@ -1,4 +1,23 @@
-# Spherical Harmonics for Environment Map Lighting in PyTorch3D
+---
+layout: post
+comments: true
+title: "Spherical Harmonics for Environment Map Lighting in PyTorch3D"
+excerpt: ""
+date:   2024-10-30 07:00:00
+mathjax: false
+---
+
+<style>
+.post-header h1 {
+    font-size: 35px;
+}
+.post pre,
+.post code {
+    background-color: #fcfcfc;
+    font-size: 13px; /* make code smaller for this post... */
+}
+</style>
+
 
 This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling. This approach transforms spherical harmonics into 2D image that can be easialy understood, analyzed and regularized.
 
@@ -87,6 +106,7 @@ Step by step adding new basis $\phi_2, \phi_3, \phi_4$ with coefficients $a_2=\f
 $$
 \text{Full equations for each approximation step:} \\
 $$
+
 $$
 \begin{align*}
 \phi_0(x) &= 2\sin(x) \\
@@ -442,3 +462,5 @@ Images above generated with Environment Map Lighting from SH coefficients. We ca
    - Recap of the benefits of spherical harmonics and environment map lighting
    - Potential future improvements or applications
    **TODO**: write conclusion, fix image namings, refere to google colab notebook
+
+<br><br><br>
