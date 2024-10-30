@@ -41,7 +41,7 @@ The best part? This method gives us a compact way to store all this lighting inf
 </p>
 <p align="center">Representation of spherical harmonics on the sphere</p>
 
-Here **on the image 1(CH)**, our scene is surrounded by this sphere. We have two light sources: *L_0* (a red light pattern) and *L_1* (a green light pattern). We can actually model these two light sources on the sphere surfaceby finding the right set of spherical harmonics coefficients. Let's take a closer look at the math behind this.
+**TODO** fix here - Here **on the image 1(CH)**, our scene is surrounded by this sphere. We have two light sources: $**L_0**$ (a red light pattern) and $**L_1**$ (a green light pattern). We can actually model these two light sources on the sphere surface by finding the right set of spherical harmonics coefficients. Let's take a closer look at the math behind this.
 
 ## 2. Converting Spherical Harmonics to Environment Maps
    - Mathematical overview
@@ -83,7 +83,7 @@ The process of finding coefficients $a_0, a_1, a_2, ...$ is called the Fourier S
 <p align="center">
   <img src="/assets/sh_lighting_pytorch3d/tar_annot.png" alt="Image 1" width="400"/>
 </p>
-<p align="center">Target function: &phi;<sub>t</sub>(x) = 2sin(x)</p>
+<p align="center">Target function: $$\phi_{t}(x) = 2\sin(x)$$</p>
 
 Using the Fourier Series Expansion we can find out first coefficient $a_0=2$, so our $\phi_0(x) = 2sin(x)$. As we can see on the image bellow $\phi_0(x)$ is doing a bit poor job approximating our target function. Let\`s throw into the mix second basis function $\phi_1(x) = sin(2x)$ and see how it will improve our approximation. The second order approximation is $\phi_1(x) = 2sin(x) - sin(2x)$. The countour of the function is getting closer to our target function.
 <!-- Row 2: Two images -->
@@ -91,7 +91,7 @@ Using the Fourier Series Expansion we can find out first coefficient $a_0=2$, so
   <img src="/assets/sh_lighting_pytorch3d/approx0_annot.png" alt="Image 2" width="300"/>
   <img src="/assets/sh_lighting_pytorch3d/approx1_annot.png" alt="Image 3" width="300"/>
 </p>
-<p align="center">First approximation: φ₀(x) = 2sin(x) &nbsp;&nbsp;&nbsp;&nbsp; Second approximation: φ₁(x) = 2sin(x) - sin(2x)</p>
+<p align="center">First approximation: $$\phi_0(x) = 2\sin(x)$$ &nbsp;&nbsp;&nbsp;&nbsp; Second approximation: $$\phi_1(x) = 2\sin(x) - \sin(2x)$$</p>
 
 Step by step adding new basis $\phi_2, \phi_3, \phi_4$ with coefficients $a_2=\frac{1}{2}, a_3=-\frac{1}{2}, a_4=\frac{2}{5}$ we getting better and better approximation of our target function. Each approximation occilates more frequently around the target function making approximation more accurate.
 <!-- Row 3: Two images -->
@@ -101,7 +101,7 @@ Step by step adding new basis $\phi_2, \phi_3, \phi_4$ with coefficients $a_2=\f
   <img src="/assets/sh_lighting_pytorch3d/approx4_annot.png" alt="Image 5" width="300"/>
 
 </p>
-<p align="center">Next order approximations: &phi;<sub>3</sub>(x), &phi;<sub>4</sub>(x), &phi;<sub>5</sub>(x)</p>
+<p align="center">Next order approximations: $\phi_3(x)$, $\phi_4(x)$, $\phi_5(x)$</p>
 
 $$
 \text{Full equations for each approximation step:} \\
