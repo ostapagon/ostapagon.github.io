@@ -18,7 +18,7 @@ With just these two pieces of information, we can map out the entire lighting en
 The best part? This method gives us a compact way to store all this lighting info. Instead of trying to remember every tiny detail about the light, we just need to keep track of a few key numbers. It's like compressing a huge image file into a small, manageable size, but for lighting!
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/spherical_harmonics_overview.jpg" alt="Image 1" width="1000"/>
+  <img src="/assets/sh_lighting_pytorch3d/spherical_harmonics_overview.jpg" alt="Image 1" width="1000"/>
 </p>
 <p align="center">Representation of spherical harmonics on the sphere</p>
 
@@ -29,7 +29,7 @@ Here **on the image 1(CH)**, our scene is surrounded by this sphere. We have two
    - Implementation using PyTorch
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/sh_main_exp.png" alt="Image 1" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/sh_main_exp.png" alt="Image 1" width="500"/>
 </p>
 <p align="center">Spherical Harmonic basis functions</p>
 
@@ -62,24 +62,24 @@ The process of finding coefficients $a_0, a_1, a_2, ...$ is called the Fourier S
 
 <!-- Row 1: Single image -->
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/tar_annot.png" alt="Image 1" width="400"/>
+  <img src="/assets/sh_lighting_pytorch3d/tar_annot.png" alt="Image 1" width="400"/>
 </p>
 <p align="center">Target function: &phi;<sub>t</sub>(x) = 2sin(x)</p>
 
 Using the Fourier Series Expansion we can find out first coefficient $a_0=2$, so our $\phi_0(x) = 2sin(x)$. As we can see on the image bellow $\phi_0(x)$ is doing a bit poor job approximating our target function. Let\`s throw into the mix second basis function $\phi_1(x) = sin(2x)$ and see how it will improve our approximation. The second order approximation is $\phi_1(x) = 2sin(x) - sin(2x)$. The countour of the function is getting closer to our target function.
 <!-- Row 2: Two images -->
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/approx0_annot.png" alt="Image 2" width="300"/>
-  <img src="../assets/sh_lighting_pytorch3d/approx1_annot.png" alt="Image 3" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx0_annot.png" alt="Image 2" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx1_annot.png" alt="Image 3" width="300"/>
 </p>
 <p align="center">First approximation: φ₀(x) = 2sin(x) &nbsp;&nbsp;&nbsp;&nbsp; Second approximation: φ₁(x) = 2sin(x) - sin(2x)</p>
 
 Step by step adding new basis $\phi_2, \phi_3, \phi_4$ with coefficients $a_2=\frac{1}{2}, a_3=-\frac{1}{2}, a_4=\frac{2}{5}$ we getting better and better approximation of our target function. Each approximation occilates more frequently around the target function making approximation more accurate.
 <!-- Row 3: Two images -->
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/approx2_annot.png" alt="Image 4" width="300"/>
-  <img src="../assets/sh_lighting_pytorch3d/approx3_annot.png" alt="Image 5" width="300"/>
-  <img src="../assets/sh_lighting_pytorch3d/approx4_annot.png" alt="Image 5" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx2_annot.png" alt="Image 4" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx3_annot.png" alt="Image 5" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx4_annot.png" alt="Image 5" width="300"/>
 
 </p>
 <p align="center">Next order approximations: &phi;<sub>3</sub>(x), &phi;<sub>4</sub>(x), &phi;<sub>5</sub>(x)</p>
@@ -101,7 +101,7 @@ What is cool about this approch is how we just threw in new basis function with 
 
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/sh_bands.png" alt="Image 4" width="600"/>
+  <img src="/assets/sh_lighting_pytorch3d/sh_bands.png" alt="Image 4" width="600"/>
 </p>
 <p align="center"></p>
 
@@ -128,7 +128,7 @@ First step is create small function to set the resolution for the environment ma
 
 Second step is to write a function to calculate associated Legendre polynomials. They have recursive relationship which we can use to compute them. Code for this is kind of counterintuitive, but it follows the definition $P_l^m$.
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/associated_legrende_polynomial.png" alt="Image 5" width="350"/>
+  <img src="/assets/sh_lighting_pytorch3d/associated_legrende_polynomial.png" alt="Image 5" width="350"/>
 </p>
 <p align="center">Associated Legendre polynomial</p>
 
@@ -160,12 +160,12 @@ Second step is to write a function to calculate associated Legendre polynomials.
         return pll
 ```
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/norm_factor.png" alt="Image 5" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/norm_factor.png" alt="Image 5" width="300"/>
 </p>
 <p align="center">Third step: Normalization factor</p>
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/sh_formula.png" alt="Image 4" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/sh_formula.png" alt="Image 4" width="500"/>
 </p>
 <p align="center">Fourth step: Spherical harmonic formula</p>
 
@@ -225,14 +225,14 @@ When light interacts with the surface of an object, it can be reflected in diffe
 **Specular reflection** is responsible for creating highlights and shiny surfaces. Incomoing light rays $R_{\text{in}}$ bounces off the surface and becomes $R_{\text{out}}$. $R_{\text{out}}$ has the same angle to surface normal $N$ as $R_{\text{in}}$. To calculate $R_{\text{out}}$ we need to reflect $R_{\text{in}}$ over the surface normal $N$. We will use newly calculated $R_{\text{out}}$ to sample lighting value from the environment map.
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/specular_reflection.jpg" alt="Image 4" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/specular_reflection.jpg" alt="Image 4" width="500"/>
 </p>
 <p align="center">Specular reflection</p>
 
 **Diffuse reflection** is responsible for creating a diffuse appearance. In this case, light is scattered in all directions, creating a uniform illumination across the surface. Due to the roughness of the surface incoming rays $R_{\text{in}}$ are reflected in different directions. Instead of moddeling each ray reflection depending on the point it hits, we just use normal $N$ of the point to sample ligthing value from the environment map. It will provide average lighting value of rays scattered across the surface.
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/diffuse_reflection.jpg" alt="Image 4" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/diffuse_reflection.jpg" alt="Image 4" width="500"/>
 </p>
 <p align="center">Diffuse reflection</p>
 
@@ -357,7 +357,7 @@ The **shininess** parameter in the `EnvMapLighting.specular` method controls the
 Having all the puzzle pieces put together we can now reconstruct the scene illumination with Environment Map generated from SH coefficients. I previously generated a training dataset $I_{\text{p}}$ of a cow mesh using 10 different camera angles and a `PointLights` illumination scheme from PyTorch3D. Now we can use the same camera angles and mesh to recreate the `PointLights` lighting with our `EnvMapLighting` class and see it`s capabilities.
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/cow_train_data.png" alt="Image 4" width="800"/>
+  <img src="/assets/sh_lighting_pytorch3d/cow_train_data.png" alt="Image 4" width="800"/>
 </p>
 <p align="center">Trainging Images with PointLights illumination</p>
 
@@ -426,13 +426,13 @@ Training finished!
 With each iteration loss reduces meaning our coefficients are getting closer to the optimal values. After 300 iterations we can see that our Environment Map is pretty close to the original training images.
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/diffuse_specular_envmaps.png" alt="Image 4" width="800"/>
+  <img src="/assets/sh_lighting_pytorch3d/diffuse_specular_envmaps.png" alt="Image 4" width="800"/>
 </p>
 <p align="center">Reconstructed Diffuse and Specular Environment Maps</p>
 
 
 <p align="center">
-  <img src="../assets/sh_lighting_pytorch3d/cow_reconstructed_data.png" alt="Image 4" width="800"/>
+  <img src="/assets/sh_lighting_pytorch3d/cow_reconstructed_data.png" alt="Image 4" width="800"/>
 </p>
 <p align="center">Test Images with Environment Map Lighting</p>
 
