@@ -426,8 +426,8 @@
   }
   
   .image-row {
-    display: flex;
-    justify-content: center; /* Center the images horizontally */
-    align-items: center; /* Center the images vertically */
-    gap: 10px; /* Add space between images */
+    display: flex !important;
+    justify-content: center !important; /* Center the images horizontally */
+    align-items: center !important; /* Center the images vertically */
+    gap: 10px !important; /* Add space between images */
   }
