@@ -1,9 +1,9 @@
 ---
 layout: post
 comments: false
-title: "Spherical Harmonics for Environment Map Lighting in PyTorch3D"
-excerpt: ""
-date:   2024-10-30 07:00:00
+title: "Spherical Harmonics for Environment Map Lighting with PyTorch3D"
+excerpt: "This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling."
+date: 2024-10-31 07:00:00
 mathjax: true
 ---
 
@@ -18,11 +18,12 @@ mathjax: true
 }
 </style>
 
+<a href="https://colab.research.google.com/gist/ostapagon/ed544a229cfe4d92472460fe5d347395/spherical_harmonics_lighting_pytorch3d.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="google colab logo"></a>
 
-This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling. This approach transforms spherical harmonics into 2D image that can be easialy understood, analyzed and regularized.
+ This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling. This approach transforms spherical harmonics into 2D image that can be easialy understood, analyzed and regularized. Don`t forget to run the code in google colab to try it all by yourself.
 
 
-## 1. Spherical Harmonics in Illumination
+## Spherical Harmonics in Illumination
    - Brief introduction to spherical harmonics
    - Advantages in representing lighting environments
 
@@ -30,36 +31,36 @@ Imagine wrapping your entire scene in a giant bubble. Now, picture that this bub
 Spherical harmonics are like a special set of building blocks. Just as you can build complex Lego structures with a few basic pieces, we can describe intricate lighting patterns using these mathematical building blocks.
 To figure out what's happening at any point on our imaginary bubble, we use two simple measures:
 
-How far up or down the point is (that's our polar angle, θ)
-How far around the bubble we've gone (that's our azimuth angle, φ)
+How far up or down the point is (that's our polar angle, $\theta$)
+How far around the bubble we've gone (that's our azimuth angle, $\phi$)
 
 With just these two pieces of information, we can map out the entire lighting environment surrounding our scene. It's like creating a super-efficient light map that tells us how bright and what color the light is coming from every direction.
 The best part? This method gives us a compact way to store all this lighting info. Instead of trying to remember every tiny detail about the light, we just need to keep track of a few key numbers. It's like compressing a huge image file into a small, manageable size, but for lighting!
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/spherical_harmonics_overview.jpg" alt="Image 1" width="1000"/>
+  <img src="/assets/sh_lighting_pytorch3d/spherical_harmonics_overview.jpg" width="1000"/>
 </p>
 <p align="center">Representation of spherical harmonics on the sphere</p>
 
-**TODO** fix here - Here **on the image 1(CH)**, our scene is surrounded by this sphere. We have two light sources: $**L_0**$ (a red light pattern) and $**L_1**$ (a green light pattern). We can actually model these two light sources on the sphere surface by finding the right set of spherical harmonics coefficients. Let's take a closer look at the math behind this.
+On the image above our scene is surrounded by this sphere. We have two light sources: $L_0$ (a red light pattern) and $L_1$ (a green light pattern). We can actually model these two light sources on the sphere surface by finding the right set of spherical harmonics coefficients. Let's take a closer look at the math behind this.
 
-## 2. Converting Spherical Harmonics to Environment Maps
+## Converting Spherical Harmonics to Environment Maps
    - Mathematical overview
    - Implementation using PyTorch
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/sh_main_exp.png" alt="Image 1" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/sh_main_exp.png" width="500"/>
 </p>
 <p align="center">Spherical Harmonic basis functions</p>
 
-For people who can read this high level math here is some brief anotation:
+For people who can read this high level math here is some brief annotation:
 
 1. $y_l^m(θ, φ)$: Spherical harmonic function of degree l and order m.
    The degree l determines the overall complexity, while the order m (ranging from -l to l) specifies the number of azimuthal oscillations around the sphere.
 2. $θ, φ$: Spherical coordinates (polar angle, azimuthal angle)
 3. $K_l^m$: Normalization factor ensuring orthonormality of spherical harmonics.
 4. $P_l^m$: Associated Legendre polynomial, defining the θ (polar) oscillation pattern and frequency.
-5. $cos(mφ), sin(|m|φ)$: φ-dependent terms, creating azimuthal variation. These functions control the SH's oscillation around the equator, with $|m|$ determining the frequency of these azimuthal oscillations.
+5. $\cos(m \phi), \sin(m\phi)$: $\phi$ - dependent terms, creating azimuthal variation. These functions control the SH's oscillation around the equator, with $m$ determining the frequency of these azimuthal oscillations.
 
 For other people who want to see light in the end of this chapter lets first understand concept of basis functions and where they used. Imagine we have a function to approximate:
 
@@ -77,30 +78,29 @@ $$
 \phi_{t}(x) \approx a_0 \phi_0(x) + a_1 \phi_1(2x) + a_2 \phi_2(3x) + ... + a_n \phi_n(nx)
 $$
 
-The process of finding coefficients $a_0, a_1, a_2, ...$ is called the Fourier Series Expansion. It works by decomposing the target function into a sum of sine and cosine functions(in our example we use only sine functions) - **orthogonal basis functions**—and finding the coefficients by projecting the target function onto each basis function through integration. For sake of simplicity we consider interval $x \in [-\pi, \pi]$. We won\`t go into details towards how this coefficients is found, but lets see how with each new basis added we getting better approximation of our target function Im.
+The process of finding coefficients $a_0, a_1, a_2, ...$ is called the Fourier Series Expansion. It works by decomposing the target function into a sum of sine and cosine functions(in our example we use only sine functions) - **orthogonal basis functions**—and finding the coefficients by projecting the target function onto each basis function through integration. For sake of simplicity we consider interval $x \in [-\pi, \pi]$. We won\`t go into details towards how this coefficients is found, but lets see how with each new basis added we getting better approximation of our target function $\phi_{t}$.
 
 <!-- Row 1: Single image -->
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/tar_annot.png" alt="Image 1" width="400"/>
+  <img src="/assets/sh_lighting_pytorch3d/tar_annot.png" width="400"/>
 </p>
 <p align="center">Target function: $$\phi_{t}(x) = 2\sin(x)$$</p>
 
-Using the Fourier Series Expansion we can find out first coefficient $a_0=2$, so our $\phi_0(x) = 2sin(x)$. As we can see on the image bellow $\phi_0(x)$ is doing a bit poor job approximating our target function. Let\`s throw into the mix second basis function $\phi_1(x) = sin(2x)$ and see how it will improve our approximation. The second order approximation is $\phi_1(x) = 2sin(x) - sin(2x)$. The countour of the function is getting closer to our target function.
+Using the Fourier Series Expansion out first coefficient $a_0=2$, so our 0-th approximation is $\phi_0(x) = 2\sin(x)$. As we can see on the image bellow $\phi_0(x)$ is doing a bit poor job approximating our target function. Let\`s throw into the mix second basis function $a_1\sin(2x)$ and see how it will improve our approximation. The second order approximation is $\phi_1(x) = 2\sin(x) - \sin(2x)$. The countour of the function is getting closer to our target function.
 <!-- Row 2: Two images -->
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/approx0_annot.png" alt="Image 2" width="300"/>
-  <img src="/assets/sh_lighting_pytorch3d/approx1_annot.png" alt="Image 3" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx0_annot.png" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx1_annot.png" width="300"/>
 </p>
-<p align="center">First approximation: $$\phi_0(x) = 2\sin(x)$$ &nbsp;&nbsp;&nbsp;&nbsp; Second approximation: $$\phi_1(x) = 2\sin(x) - \sin(2x)$$</p>
+<p align="center">&emsp;&emsp;&emsp;&emsp; First approximation: $\phi_0(x) = 2\sin(x)$ &emsp;&emsp; Second approximation: $\phi_1(x) = 2\sin(x) - \sin(2x)$</p>
 
 Step by step adding new basis $\phi_2, \phi_3, \phi_4$ with coefficients $a_2=\frac{1}{2}, a_3=-\frac{1}{2}, a_4=\frac{2}{5}$ we getting better and better approximation of our target function. Each approximation occilates more frequently around the target function making approximation more accurate.
 <!-- Row 3: Two images -->
-<p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/approx2_annot.png" alt="Image 4" width="300"/>
-  <img src="/assets/sh_lighting_pytorch3d/approx3_annot.png" alt="Image 5" width="300"/>
-  <img src="/assets/sh_lighting_pytorch3d/approx4_annot.png" alt="Image 5" width="300"/>
-
-</p>
+<div class="image-row">
+  <img src="/assets/sh_lighting_pytorch3d/approx2_annot.png" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx3_annot.png" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/approx4_annot.png" width="300"/>
+</div>
 <p align="center">Next order approximations: $\phi_3(x)$, $\phi_4(x)$, $\phi_5(x)$</p>
 
 $$
@@ -117,15 +117,14 @@ $$
 \end{align*}
 $$
 
-What is cool about this approch is how we just threw in new basis function with new coefficients without recalculating all the previous ones. This is the power of **ORTHOGONALITY**. Because basis function does not influence each other we can just add new ones and find their coefficients **INDEPENDENTLY**. For us, computer people this word translates into parallelization. We can speed up our computations and also reuse previous iterations, nothing goes to waste. This is the same property that Spherical Harmonics poses. Those tricky formulas actually generate infinite set of basis functions that are orthogonal  btw each orther. Similar to what we used in our example. Basically, Spherical Harmonics basis function can be used to approximate any function. In our practical case is a lighting pattern around our scene. Hopefully orthogonality property of **SH** is more or less clear now, but what about those **degree** and **order**?
-
+What is cool about this approch is how we just threw in new basis function with new coefficients without recalculating all the previous ones. This is the power of **ORTHOGONALITY**. Because basis function does not influence each other we can just add new ones and find their coefficients **INDEPENDENTLY**. For us, computer people this word translates into parallelization. We can speed up our computations and also reuse previous iterations, nothing goes to waste. This is the same property that Spherical Harmonics poses. Those tricky formulas actually generate infinite set of basis functions that are orthogonal  between each other. SH basis functions can be used to approximate any function on the surface of the sphere. In our practical case is a lighting pattern around our scene. Hopefully, orthogonality property of **SH** is more or less clear now, but what about those **degree** and **order**?
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/sh_bands.png" alt="Image 4" width="600"/>
+  <img src="/assets/sh_lighting_pytorch3d/sh_bands.png" width="600"/>
 </p>
 <p align="center"></p>
 
-On the image above you can observe different SH bands. With each new degree $l$ we add new band of functions. Order $m$ describes number of oscillations within each band and ranges $[-l, l]$. New band provides more variability and allows us to represent more complex patterns. In case of using SH for representing lighting patterns we usually limit ourselves with degree $l=2$. This is because lighting patterns are usually smooth and do not require high frequency oscillations. For degree $l=2$ we have 9 basis functions in total. Why 9? because total number of basis functions is $1 + 3 + 5 = 9$ - first 3 rows of the image above. Enought of math for now, let\`s focus on how we can code these equations and see what patterns they represent. Basically, there are 2 common ways to approach calculation of light with spherical harmonics:
+On the image above you can observe different SH bands. With each new degree $l$ we add new band of functions. Order $m$ describes number of oscillations within each band and ranges $[-l, l]$. New band provides more variability and allows us to represent more complex patterns. In case of using SH for representing lighting patterns we usually limit ourselves with degree $l=2$. This is because lighting patterns are usually smooth and do not require high frequency oscillations. For degree $l=2$ we have 9 basis functions in total. Why 9? because total number of basis functions is $1 + 3 + 5 = 9$ - first 3 rows of the image above. Enought of math for now, let\`s focus on how we can code these equations and see what patterns they represent. There are 2 common ways to approach calculation of light with spherical harmonics:
 
 **Direct Evaluation** - having a direction represented as two angles ($θ$(polar), $φ$(azimuthal)) just throw in coefficients and input angles into the equation and receive lighting value.
 
@@ -135,7 +134,7 @@ On the image above you can observe different SH bands. With each new degree $l$ 
 
 At this point, all we want is to hide these SH equations inside the class which do everything, so we don\`t need to think about what\`s going on there ever again.
 
-First step is create small function to set the resolution for the environment map and compute $\theta$ and $\phi$ grids. There is a little trick here with adding 0.5 to the uv grid during remapping from $[0,res]$ to $[0, \pi]$ and $[0, 2\pi]$. This is done, so we calculate SH values for the center of each pixel, not for the corner.
+First step is create small function to set the resolution for the Env Map and compute $\theta$ and $\phi$ grids. There is a little trick here with adding 0.5 to the uv grid during remapping from $[0,res]$ to $[0, \pi]$ and $[0, 2\pi]$. This is done, so we calculate SH values for the center of each pixel, not for the corner.
 ```python
 def set_environment_map_resolution(self, res):
   """ Step 1: Set the resolution for the environment map and compute theta and phi grids """
@@ -148,7 +147,7 @@ def set_environment_map_resolution(self, res):
 
 Second step is to write a function to calculate associated Legendre polynomials. They have recursive relationship which we can use to compute them. Code for this is kind of counterintuitive, but it follows the definition $P_l^m$.
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/associated_legrende_polynomial.png" alt="Image 5" width="350"/>
+  <img src="/assets/sh_lighting_pytorch3d/associated_legrende_polynomial.png" width="350"/>
 </p>
 <p align="center">Associated Legendre polynomial</p>
 
@@ -180,12 +179,12 @@ def compute_associated_legendre_polynomial(self, l, m, x):
     return pll
 ```
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/norm_factor.png" alt="Image 5" width="300"/>
+  <img src="/assets/sh_lighting_pytorch3d/norm_factor.png" width="300"/>
 </p>
 <p align="center">Third step: Normalization factor</p>
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/sh_formula.png" alt="Image 4" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/sh_formula.png" width="500"/>
 </p>
 <p align="center">Fourth step: Spherical harmonic formula</p>
 
@@ -227,42 +226,42 @@ def construct_environment_map_from_sh_coeffs(self, sh_coeffs, smooth=False):
     result = torch.max(result, torch.zeros(res[0], res[1], smoothed_coeffs.shape[0], device=smoothed_coeffs.device))
     ...
 ```
-**TODO**: To see the whole `SphericalHarmonics` class implementation refere to the notebook code.
+To see the whole `SphericalHarmonics` class implementation, refer to the [notebook code](https://colab.research.google.com/gist/ostapagon/ed544a229cfe4d92472460fe5d347395/spherical_harmonics_lighting_pytorch3d.ipynb).
 With this class we can now generate environment map from the given SH coefficients, but now comes more 3D Graphics stuff.
 
 
-## 3. Scene Illumination with Environment Maps
+## Scene Illumination with Environment Maps
    - Calculating specular reflections
    - Calculating diffuse lighting
-   - Sampling the environment map
+   - Sampling the Environment Map
 
-To render the scene with 2D environment map we are going to use PyTorch3D library. It provides a lot of useful tools for 3D graphics tasks. We are going to use `MeshRenderer`, `SoftPhongShader` and `FoVPerspectiveCameras` to render our scene. In Pytorch3dD library are different types of lighting schemes - `PointLights`, `DirectionalLights`, `AmbientLights` and `SpotLights`. But to use our new Environment Map generated from SH, we are going to implement our own lighting class `EnvMapLights`. 
+To render the scene with 2D Env Map we are going to use PyTorch3D library. It provides a lot of useful tools for 3D graphics tasks. We are going to use `MeshRenderer`, `SoftPhongShader` and `FoVPerspectiveCameras` to render our scene. Pytorch3D library provides different types of lighting schemes - `PointLights`, `DirectionalLights`, `AmbientLights` and `SpotLights`. But to use our new Environment Map generated from SH, we are going to implement our own lighting class `EnvMapLights`. 
 
 When light interacts with the surface of an object, it can be reflected in different ways:
-   - Specular reflection - light is reflected in a specific direction, creating a shiny or mirror-like appearance.
-   - Diffuse reflection - light is scattered in all directions, creating a diffuse appearance.
+   - **Specular reflection** - light is reflected in a specific direction, creating a shiny or mirror-like appearance.
+   - **Diffuse reflection** - light is scattered in all directions, creating a diffuse appearance.
 
-**Specular reflection** is responsible for creating highlights and shiny surfaces. Incomoing light rays $R_{\text{in}}$ bounces off the surface and becomes $R_{\text{out}}$. $R_{\text{out}}$ has the same angle to surface normal $N$ as $R_{\text{in}}$. To calculate $R_{\text{out}}$ we need to reflect $R_{\text{in}}$ over the surface normal $N$. We will use newly calculated $R_{\text{out}}$ to sample lighting value from the environment map.
+**Specular reflection** is responsible for creating highlights and shiny surfaces. Incomoing light rays $R_{\text{in}}$ bounces off the surface and becomes $R_{\text{out}}$. $R_{\text{out}}$ has the same angle to surface normal $N$ as $R_{\text{in}}$. To calculate $R_{\text{out}}$ we need to reflect $R_{\text{in}}$ over the surface normal $N$. We will use newly calculated $R_{\text{out}}$ to sample lighting value from the Environment Map.
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/specular_reflection.jpg" alt="Image 4" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/specular_reflection.jpg" width="500"/>
 </p>
 <p align="center">Specular reflection</p>
 
-**Diffuse reflection** is responsible for creating a diffuse appearance. In this case, light is scattered in all directions, creating a uniform illumination across the surface. Due to the roughness of the surface incoming rays $R_{\text{in}}$ are reflected in different directions. Instead of moddeling each ray reflection depending on the point it hits, we just use normal $N$ of the point to sample ligthing value from the environment map. It will provide average lighting value of rays scattered across the surface.
+**Diffuse reflection** is responsible for creating a diffuse appearance. In this case, light is scattered in all directions, creating a uniform illumination across the surface. Due to the roughness of the surface incoming rays $R_{\text{in}}$ are reflected in different directions. Instead of modeling each ray reflection depending on the point it hits, we just use the normal $\overline{N}$ average of $N_0, N_1, N_2$. $\overline{N}$ nicely describes small region of the surface and used to sample lighting value from the Environment Map. It will provide average lighting value of rays scattered across that surface region.
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/diffuse_reflection.jpg" alt="Image 4" width="500"/>
+  <img src="/assets/sh_lighting_pytorch3d/diffuse_reflection.jpg" width="500"/>
 </p>
 <p align="center">Diffuse reflection</p>
 
-To sample values from Environment Map for specular reflection use $R_{\text{out}}$ direction and for diffuse reflection use normal $N$. Now the question is how having 2 direction vectors get light values from 2D map images. It is actually quite simple:
+To sample values from Environment Map for specular reflection use $R_{\text{out}}$ direction and for diffuse reflection use normal $\overline{N}$. Now the question is how having 2 direction vectors get light values from 2D map images. It is actually quite simple:
 
 1. Convert $(x,y,z)$ euclidian direction vector to spherical coordinates ($\theta, \phi$);
 2. Normalize $\theta$ and $\phi$ to uv coordinates in $[0, 1]$ range;
 3. Use uv coordinates to sample lighting value from the Environment Map.
 
-In this code we skipping $\theta$ and $\phi$ conversion and directly convert $(x,y,z)$ to uv coordinates. $[-1, 1]$ range is needed as `torch.nn.functional.grid_sample` expects input mapped in this range.
+But because we are ~~lazy~~smart we\`ll skip the intermediate convertion to $\theta$ and $\phi$ and directly convert $(x,y,z)$ to uv coordinates. $[-1, 1]$ range is needed as `torch.nn.functional.grid_sample` expects input mapped in this range.
 ```python
 def _convert_to_uv(self, directions):
     # Calculate the square of each component (x, y, z+1)
@@ -286,7 +285,7 @@ def _convert_to_uv(self, directions):
     return uv_directions
 ```
 
-## 4. Implementation with PyTorch3D
+## Implementation with PyTorch3D
    - Overview of the `EnvMapLighting` class
    - Integration with PyTorch3D's rendering pipeline
    - Optimizing Environment Map Lighting via Spherical Harmonics coefficients
@@ -377,12 +376,12 @@ The **shininess** parameter in the `EnvMapLighting.specular` method controls the
 Having all the puzzle pieces put together we can now reconstruct the scene illumination with Environment Map generated from SH coefficients. I previously generated a training dataset $I_{\text{p}}$ of a cow mesh using 10 different camera angles and a `PointLights` illumination scheme from PyTorch3D. Now we can use the same camera angles and mesh to recreate the `PointLights` lighting with our `EnvMapLighting` class and see it`s capabilities.
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/cow_train_data.png" alt="Image 4" width="800"/>
+  <img src="/assets/sh_lighting_pytorch3d/cow_train_data.png" width="800"/>
 </p>
 <p align="center">Trainging Images with PointLights illumination</p>
 
 
-To begin with we have to initialize our `SphericalHarmonics` class and define the loss function and optimizer. Our resulting Env Map will be a 256x256 image. Usually, to reconstruct scene illumination order 3 spherical harmonics are enough. In most cases scene light is smooth and does not require high frequency oscillations. This means we have $3^2 = 9$ coefficients to optimize. Also, in our experiment we will use 2 sets of coefficients for diffuse and specular lighting seperately to have more control over the lighting. During optimization of SH coefficients we will use simple MSE loss function and Adam optimizer.
+To begin with we have to initialize our `SphericalHarmonics` class and define the loss function and optimizer. Our resulting Env Map will be a $256 \times256$ image. Usually, to reconstruct scene illumination first 3 bands of spherical harmonics are enough. In most cases scene light is smooth and does not require high frequency oscillations. This means we have $3^2 = 9$ coefficients to optimize. Also, in our experiment we will use 2 sets of coefficients for diffuse and specular lighting seperately to have more control over the lighting. During optimization of SH coefficients we will use simple MSE loss function and Adam optimizer.
 
 ```python
 sh = SphericalHarmonics(256, device='cuda:0')
@@ -446,21 +445,33 @@ Training finished!
 With each iteration loss reduces meaning our coefficients are getting closer to the optimal values. After 300 iterations we can see that our Environment Map is pretty close to the original training images.
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/diffuse_specular_envmaps.png" alt="Image 4" width="800"/>
+  <img src="/assets/sh_lighting_pytorch3d/diffuse_specular_envmaps.png" width="800"/>
 </p>
 <p align="center">Reconstructed Diffuse and Specular Environment Maps</p>
 
 
 <p align="center">
-  <img src="/assets/sh_lighting_pytorch3d/cow_reconstructed_data.png" alt="Image 4" width="800"/>
+  <img src="/assets/sh_lighting_pytorch3d/cow_reconstructed_data.png" width="800"/>
 </p>
 <p align="center">Test Images with Environment Map Lighting</p>
 
 Images above generated with Environment Map Lighting from SH coefficients. We can see that SH coefficents is able to reconstruct the scene illumination with smooth lighting transitions.
 
-## 5. Conclusion
-   - Recap of the benefits of spherical harmonics and environment map lighting
-   - Potential future improvements or applications
-   **TODO**: write conclusion, fix image namings, refere to google colab notebook
+## All Together: Lighting with Spherical Harmonics
+By combining all the components we've discussed, we've concocted a magical potion for scene illumination using spherical harmonics! Abracadabra! I hope this all makes sense to you.
+
+And in case not, let’s quickly summarize.
+
+We started by wrapping our scene in a giant bubble and using spherical harmonics as our special set of building blocks to represent complex lighting patterns on its surface. By understanding the concept of orthogonal basis functions—much like in Fourier Series—we saw how we can approximate any function on the sphere's surface without recalculating previous coefficients.
+
+Next, we converted these spherical harmonics into 2D environment maps. We hid the heavy math inside a handy class that computes associated Legendre polynomials and normalization factors, making it easier to generate and work with these maps.
+
+Then, we explored how light interacts with surfaces through specular and diffuse reflections. By converting our 3D direction vectors directly into UV coordinates, we made sampling from the environment map straightforward and efficient.
+
+Finally, we implemented everything using PyTorch3D. We optimized the spherical harmonics coefficients to match our training images, and with each iteration, our lighting got smoother and more accurate. This demonstrated the effectiveness of using SH coefficients in environment map lighting.
+
+This is it for using spherical harmonics for environment map lighting! I hope this post served you well. Don't forget to run the code in Google Colab to try it all out yourself. Please don't hesitate to reach out andask any questions.
+
+[**Happy rendering!**](https://colab.research.google.com/gist/ostapagon/ed544a229cfe4d92472460fe5d347395/spherical_harmonics_lighting_pytorch3d.ipynb)
 
 <br><br><br>

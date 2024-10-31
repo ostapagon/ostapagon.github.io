@@ -424,3 +424,10 @@
       margin: 0 0 15px; }
   
   }
+  
+  .image-row {
+    display: flex;
+    justify-content: center; /* Center the images horizontally */
+    align-items: center; /* Center the images vertically */
+    gap: 10px; /* Add space between images */
+  }
