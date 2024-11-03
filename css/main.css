@@ -426,8 +426,23 @@
   }
   
   .image-row {
-    display: flex !important;
-    justify-content: center !important; /* Center the images horizontally */
-    align-items: center !important; /* Center the images vertically */
-    gap: 10px !important; /* Add space between images */
+    display: flex;
+    justify-content: space-around; /* Distribute space evenly */
+    align-items: center;
+    margin: 20px 0;
+  }
+  .image-container {
+      text-align: center; /* Center text below each image */
+  }
+  .image-container img {
+      max-width: 100%; /* Ensure images are responsive */
+      height: auto;
+      display: block;
+      margin: 0 auto; /* Center image within its container */
+  }
+  .image-caption {
+      margin-top: 10px;
+      font-size: 16px; /* Increase font size */
+      color: #000; /* Make text color black for vividness */
+      text-align: center; /* Center align the text */
   }
