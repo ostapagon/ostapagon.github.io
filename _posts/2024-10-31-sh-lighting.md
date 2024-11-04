@@ -281,7 +281,7 @@ When light interacts with the surface of an object, it can be reflected in diffe
    - **Specular reflection** - light is reflected in a specific direction, creating a shiny or mirror-like appearance.
    - **Diffuse reflection** - light is scattered in all directions, creating a diffuse appearance.
 
-**Specular reflection** is responsible for creating highlights and shiny surfaces. Incomoing light rays $R_{\text{in}}$ bounces off the surface and becomes $R_{\text{out}}$. $R_{\text{out}}$ has the same angle to surface normal $N$ as $R_{\text{in}}$. To calculate $R_{\text{out}}$ we need to reflect $R_{\text{in}}$ over the surface normal $N$. We will use newly calculated $R_{\text{out}}$ to sample lighting value from the Environment Map.
+**Specular reflection** is responsible for creating highlights and shiny surfaces. Incoming light rays $R_{\text{in}}$ bounces off the surface and becomes $R_{\text{out}}$. $R_{\text{out}}$ has the same angle to surface normal $N$ as $R_{\text{in}}$. To calculate $R_{\text{out}}$ we need to reflect $R_{\text{in}}$ over the surface normal $N$. We will use newly calculated $R_{\text{out}}$ to sample lighting value from the Environment Map.
 
 <div class="image-row">
     <div class="image-container">
