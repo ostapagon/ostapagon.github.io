@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Spherical Harmonics for Environment Map Lighting with PyTorch3D | ostapagon's Blog</title>
+<meta name="keywords" content="spherical-harmonics, pytorch3d, computer-graphics, lighting, environment-maps" />
+<meta name="description" content="This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling.">
+<meta name="author" content="Ostap Hembara">
+<link rel="canonical" href="https://ostapagon.github.io/posts/2024-10-31-sh-lighting/" />
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.51b2420ff5ea1215cdf584af7ba59d5fea94201c33f25109d6448c7271631316.css" integrity="sha256-UbJCD/XqEhXN9YSve6WdX&#43;qUIBwz8lEJ1kSMcnFjExY=" rel="preload stylesheet" as="style">
+<link rel="stylesheet" href="/assets/css/custom.css">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.min.2eadbb982468c11a433a3e291f01326f2ba43f065e256bf792dbd79640a92316.js" integrity="sha256-Lq27mCRowRpDOj4pHwEybyukPwZeJWv3ktvXlkCpIxY="
+    onload="hljs.initHighlightingOnLoad();" onerror="loadHighlightJSFallback();"></script>
+<link rel="icon" href="https://ostapagon.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://ostapagon.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://ostapagon.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://ostapagon.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://ostapagon.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="https://ostapagon.github.io/posts/2024-10-31-sh-lighting/" />
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$','$$'], ['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+  };
+
+  window.addEventListener('load', (event) => {
+      document.querySelectorAll("mjx-container").forEach(function(x){
+        x.parentElement.classList += 'has-jax'})
+    });
+
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+.post-header h1 {
+    font-size: 35px;
+}
+.post pre,
+.post code {
+    background-color: #fcfcfc;
+    font-size: 13px; /* make code smaller for this post... */
+}
+
+/* Enhanced syntax highlighting CSS */
+.post pre code {
+    background-color: transparent !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    line-height: 1.4;
+}
+
+/* Unified syntax highlighting using dark theme palette for both light and dark modes */
+.hljs-keyword { color: #ff7b72 !important; font-weight: bold !important; }
+.hljs-string { color: #a5d6ff !important; }
+.hljs-number { color: #79c0ff !important; }
+.hljs-comment { color: #8b949e !important; font-style: italic !important; }
+.hljs-function { color: #d2a8ff !important; }
+.hljs-class { color: #d2a8ff !important; }
+.hljs-name { color: #d2a8ff !important; }
+.hljs-built_in { color: #79c0ff !important; }
+.hljs-literal { color: #79c0ff !important; }
+.hljs-params { color: #e6edf3 !important; }
+.hljs-attr { color: #ff7b72 !important; }
+.hljs-title { color: #d2a8ff !important; font-weight: bold !important; }
+.image-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: nowrap;
+}
+.image-row img {
+    display: block;
+    margin: 0 auto;
+}
+.image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 0 0 auto;
+}
+.image-caption {
+    margin-top: 10px;
+    font-style: italic;
+    color: #666;
+    font-size: 16px;
+}
+
+.image-container img[src="diffuse_reflection.jpg"] {
+    margin-left: 130px;
+}
+
+/* Footer links styling - make them display horizontally */
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.footer-links a {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.footer-links a:hover {
+    color: #007acc;
+}
+
+
+/* .logo {
+    margin-left: -100px;
+} */
+</style>
+
+</head>
+
+<body class="" id="top">
+    <noscript>
+        <style>
+            #theme-toggle,
+            .top-link {
+                display: none;
+            }
+    
+        </style>
+        <style>
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --theme: rgb(29, 30, 32);
+                    --entry: rgb(46, 46, 51);
+                    --primary: rgb(218, 218, 219);
+                    --secondary: rgb(155, 156, 157);
+                    --tertiary: rgb(65, 66, 68);
+                    --content: rgb(196, 196, 197);
+                    --hljs-bg: rgb(46, 46, 51);
+                    --code-bg: rgb(55, 56, 62);
+                    --border: rgb(51, 51, 51);
+                }
+    
+                .list {
+                    background: var(--theme);
+                }
+    
+                .list:not(.dark)::-webkit-scrollbar-track {
+                    background: 0 0;
+                }
+    
+                .list:not(.dark)::-webkit-scrollbar-thumb {
+                    border-color: var(--theme);
+                }
+            }
+    
+            /* Social icons styling */
+            .lang-switch {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .lang-switch li {
+                display: flex;
+                align-items: center;
+            }
+            
+            .lang-switch a {
+                display: flex;
+                align-items: center;
+                padding: 4px;
+            }
+            
+            .lang-switch svg {
+                width: 16px;
+                height: 16px;
+            }
+    
+        </style>
+</noscript>
+        <script async src="G-NRCFMZDRR3"></script>
+        <script>
+        var doNotTrack = false;
+        if ( false ) {
+            var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+            var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-NRCFMZDRR3');
+        }
+        </script><meta property="og:title" content="ostapagon: Your Blog Title" />
+<meta property="og:description" content="ostapagon: Your blog description" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ostapagon.github.io/" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ostapagon: Your Blog Title"/>
+<meta name="twitter:description" content="ostapagon: Your blog description."/>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "ostapagon: Your Blog Name",
+    "url": "ostapagon: Your site URL",
+    "description": "ostapagon: Your blog description",
+    "thumbnailUrl": "ostapagon: Your favicon path",
+    "sameAs": [
+        "https://github.com/ostapagon",
+        "https://twitter.com/ostapagone"
+    ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<script>
+    MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$','$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+    },
+    options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+    };
+
+    window.addEventListener('load', (event) => {
+        document.querySelectorAll("mjx-container").forEach(function(x){
+        x.parentElement.classList += 'has-jax'})
+    });
+
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://ostapagon.github.io/" accesskey="h" title="ostapagon">ostapagon</a>
+            <span class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+                    </svg>
+                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
+                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                        stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="5"></circle>
+                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </span>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://ostapagon.github.io/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://ostapagon.github.io/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title">
+      Spherical Harmonics for Environment Map Lighting with PyTorch3D
+    </h1>
+    <div class="post-meta">Date: October 31, 2024  |  Estimated Reading Time: 40 min  |  Author: Ostap Hembara
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#spherical-harmonics-in-illumination" aria-label="Spherical Harmonics in Illumination">Spherical Harmonics in Illumination</a></li>
+                <li>
+                    <a href="#converting-spherical-harmonics-to-environment-maps" aria-label="Converting Spherical Harmonics to Environment Maps">Converting Spherical Harmonics to Environment Maps</a></li>
+                <li>
+                    <a href="#scene-illumination-with-environment-maps" aria-label="Scene Illumination with Environment Maps">Scene Illumination with Environment Maps</a></li>
+                <li>
+                    <a href="#implementation-with-pytorch3d" aria-label="Implementation with PyTorch3D">Implementation with PyTorch3D</a></li>
+                <li>
+                    <a href="#all-together-lighting-with-spherical-harmonics" aria-label="All Together: Lighting with Spherical Harmonics">All Together: Lighting with Spherical Harmonics</a></li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+  <div class="post-content">
+<a href="https://colab.research.google.com/gist/ostapagon/ed544a229cfe4d92472460fe5d347395/spherical_harmonics_lighting_pytorch3d.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="google colab logo"></a>
+
+<p>This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling. This approach transforms spherical harmonics into 2D image that can be easily understood, analyzed and regularized. Don`t forget to run the code in google colab to try it all by yourself.</p>
+
+<h2 id="spherical-harmonics-in-illumination">Spherical Harmonics in Illumination</h2>
+<ul>
+  <li>Brief introduction to spherical harmonics</li>
+  <li>Advantages in representing lighting environments</li>
+</ul>
+<p>Imagine wrapping your entire scene in a giant bubble. Now, picture that this bubble isn't just plain - it's covered in a complex pattern of light and color. That's essentially what spherical harmonics help us do in computer graphics.<br>
+Spherical harmonics are like a special set of building blocks. Just as you can build complex Lego structures with a few basic pieces, we can describe intricate lighting patterns using these mathematical building blocks.<br>
+To figure out what's happening at any point on our imaginary bubble, we use two simple measures:</p>
+<ul>
+<li>How far up or down the point is (that's our polar angle, $\theta$)</li>
+<li>How far around the bubble we've gone (that's our azimuth angle, $\phi$)</li>
+</ul>
+<p>With just these two pieces of information, we can map out the entire lighting environment surrounding our scene. It's like creating a super-efficient light map that tells us how bright and what color the light is coming from every direction.<br>
+The best part? This method gives us a compact way to store all this lighting info. Instead of trying to remember every tiny detail about the light, we just need to keep track of a few key numbers. It's like compressing a huge image file into a small, manageable size, but for lighting!</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="spherical_harmonics_overview.jpg" width="700"/>
+        <div class="image-caption">Representation of spherical harmonics on the sphere</div>
+    </div>
+</div>
+<p>On the image above our scene is surrounded by this sphere. We have two light sources: $L_0$ (a red light pattern) and $L_1$ (a green light pattern). We can actually model these two light sources on the sphere surface by finding the right set of spherical harmonics coefficients. Let's take a closer look at the math behind this.</p>
+
+<h2 id="converting-spherical-harmonics-to-environment-maps">Converting Spherical Harmonics to Environment Maps</h2>
+<ul>
+  <li>Mathematical overview</li>
+  <li>Implementation using PyTorch</li>
+</ul>
+<div class="image-row">
+    <div class="image-container">
+        <img src="sh_main_exp.png" width="430"/>
+        <div class="image-caption">Spherical Harmonic basis functions</div>
+    </div>
+</div>
+<p>For people who can read this high level math here is some brief annotation:</p>
+<ol>
+<li>$y_l^m(θ, φ)$: Spherical harmonic function of degree l and order m. The degree l determines the overall complexity, while the order m (ranging from -l to l) specifies the number of azimuthal oscillations around the sphere.</li>
+<li>$θ, φ$: Spherical coordinates (polar angle, azimuthal angle)</li>
+<li>$K_l^m$: Normalization factor ensuring orthonormality of spherical harmonics.</li>
+<li>$P_l^m$: Associated Legendre polynomial, defining the θ (polar) oscillation pattern and frequency.</li>
+<li>$\cos(m \phi), \sin(m\phi)$: $\phi$ - dependent terms, creating azimuthal variation. These functions control the SH's oscillation around the equator, with $m$ determining the frequency of these azimuthal oscillations.</li>
+</ol>
+<p>For other people who want to see light in the end of this chapter lets first understand concept of basis functions and where they used. Imagine we have a function to approximate:</p>
+<p>$$\phi_{t}(x) = x$$</p>
+<p>This is one of the simplest functions we've studied back in school. As our basis let's choose periodic function:</p>
+<p>$$\phi_n(x) = sin(nx), n=1,2,3,...$$</p>
+<p>Our goal is to approximate $\phi_{t}$ as a linear combination of these basis functions:</p>
+<p>$$\phi_{t}(x) \approx a_0 \phi_0(x) + a_1 \phi_1(2x) + a_2 \phi_2(3x) + ... + a_n \phi_n(nx)$$</p>
+<p>The process of finding coefficients $a_0, a_1, a_2, ...$ is called the Fourier Series Expansion. It works by decomposing the target function into a sum of sine and cosine functions (in our example we use only sine functions) - <b>orthogonal basis functions</b>—and finding the coefficients by projecting the target function onto each basis function through integration. For sake of simplicity we consider interval $x \in [-\pi, \pi]$. We won't go into details towards how this coefficients are found, but lets see how with each new basis added we getting better approximation of our target function $\phi_{t}$.</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="tar_annot.png" width="350"/>
+        <div class="image-caption">Target function: $\phi_{t}(x) = 2\sin(x)$</div>
+    </div>
+</div>
+<div class="image-row">
+    <div class="image-container">
+        <img src="approx0_annot.png" width="300"/>
+        <div class="image-caption">First approximation: $\phi_0(x) = 2\sin(x)$</div>
+    </div>
+    <div class="image-container">
+        <img src="approx1_annot.png" width="300"/>
+        <div class="image-caption">Second approximation: $\phi_1(x) = 2\sin(x) - \sin(2x)$</div>
+    </div>
+</div>
+<div class="image-row">
+    <div class="image-container">
+        <img src="approx2_annot.png" width="300"/>
+        <div class="image-caption">$\phi_3(x)$</div>
+    </div>
+    <div class="image-container">
+        <img src="approx3_annot.png" width="300"/>
+        <div class="image-caption">$\phi_4(x)$</div>
+    </div>
+    <div class="image-container">
+        <img src="approx4_annot.png" width="300"/>
+        <div class="image-caption">$\phi_5(x)$</div>
+    </div>
+</div>
+<p align="center" style="font-size: 18px;">Next order approximations: $\phi_3(x)$, $\phi_4(x)$, $\phi_5(x)$</p>
+<p>$$
+\text{Full equations for each approximation step:} \\
+$$</p>
+<p>$$
+\begin{align*}
+\phi_0(x) &= 2\sin(x) \\
+\phi_1(x) &= 2\sin(x) - \sin(2x) \\
+\phi_2(x) &= 2\sin(x) - \sin(2x) + \frac{2}{3}\sin(3x) \\
+\phi_3(x) &= 2\sin(x) - \sin(2x) + \frac{2}{3}\sin(3x) - \frac{1}{2}\sin(4x) \\
+\phi_4(x) &= 2\sin(x) - \sin(2x) + \frac{2}{3}\sin(3x) - \frac{1}{2}\sin(4x) + \frac{2}{5}\sin(5x)
+\end{align*}
+$$</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="approx_30degree.gif" width="550"/>
+        <div class="image-caption">Approximation of $\phi_t(x)$ with 30 basis functions</div>
+    </div>
+</div>
+<p>What is cool about this approch is how we just threw in new basis function with new coefficients without recalculating all the previous ones. This is the power of <b>ORTHOGONALITY</b>. Because basis function does not influence each other we can just add new ones and find their coefficients <b>INDEPENDENTLY</b>. For us, computer people this word translates into parallelization. We can speed up our computations and also reuse previous iterations, nothing goes to waste. This is the same property that Spherical Harmonics poses. Those tricky formulas actually generate infinite set of basis functions that are orthogonal  between each other. SH basis functions can be used to approximate any function on the surface of the sphere. In our practical case is a lighting pattern around our scene. Hopefully, orthogonality property of <b>SH</b> is more or less clear now, but what about those <b>degree</b> and <b>order</b>?</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="sh_bands.png" width="670"/>
+        <div class="image-caption">Spherical Harmonics Bands</div>
+    </div>
+</div>
+<p>On the image above you can observe different SH bands. With each new degree $l$ we add new band of functions. Order $m$ describes number of oscillations within each band and ranges $[-l, l]$. New band provides more variability and allows us to represent more complex patterns. In case of using SH for representing lighting patterns we usually limit ourselves with degree $l=2$. This is because lighting patterns are usually smooth and do not require high frequency oscillations. For degree $l=2$ we have 9 basis functions in total. Why 9? because total number of basis functions is $1 + 3 + 5 = 9$ - first 3 rows of the image above. Enought of math for now, let's focus on how we can code these equations and see what patterns they represent. There are 2 common ways to approach calculation of light with spherical harmonics:</p>
+<ul>
+<li><b>Direct Evaluation</b> - having a direction represented as two angles ($θ$(polar), $φ$(azimuthal)) just throw in coefficients and input angles into the equation and receive lighting value.</li>
+<li><b>Precompute Environment Map</b> - at first generate a grid of ($\theta - [0, \pi], \phi - [0, 2\pi]$). The resolution of Environment Map is up to you and controlled by sampling density. Then for each grid points we calculate a light value using SH coefficients and get Environment Map as 2d image which we can observe, interprete and analyze.</li>
+</ul>
+<p><b>Direct Evaluation</b> is more suitable for real-time applications where we need to compute lighting for each point on the fly. <b>Precompute Environment Map</b> is more suitable for offline rendering tasks where we can afford to preprocess the lighting data and use it for real-time rendering. In our case we will focus on the second approach as its more visual and suitable for understanding.</p>
+<p>At this point, all we want is to hide these SH equations inside the class which do everything, so we don't need to think about what's going on there ever again.</p>
+<p>First step is create small function to set the resolution for the Env Map and compute $\theta$ and $\phi$ grids. There is a little trick here with adding 0.5 to the uv grid during remapping from $[0,res]$ to $[0, \pi]$ and $[0, 2\pi]$. This is done, so we calculate SH values for the center of each pixel, not for the corner.</p>
+<pre><code class="language-python">def set_environment_map_resolution(self, res):
+  """ Step 1: Set the resolution for the environment map and compute theta and phi grids """
+  res = (res, res)
+  self.resolution = res
+  uv = np.mgrid[0:res[1], 0:res[0]].astype(np.float32)  # ranges [0, res]
+  self.theta = torch.from_numpy((math.pi / res[1]) * (uv[1, :, :] + 0.5)).to(self.device)  # Theta ranges from [0, pi]
+  self.phi = torch.from_numpy((2 * math.pi / res[0]) * (uv[0, :, :] + 0.5)).to(self.device)  # Phi ranges from [0, 2*pi]
+</code></pre>
+<p>Second step is to write a function to calculate associated Legendre polynomials. They have recursive relationship which we can use to compute them. Code for this is kind of counterintuitive, but it follows the definition $P_l^m$.</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="associated_legrende_polynomial.png" width="350"/>
+        <div class="image-caption">Associated Legendre polynomial</div>
+    </div>
+</div>
+<pre><code class="language-python">def compute_associated_legendre_polynomial(self, l, m, x):
+    """ Step 2: Compute the associated Legendre polynomial P_l^m(x) """
+    # P_m^m(x): Base case for the recursion, where l == m
+    pmm = torch.ones_like(x)
+    if m > 0:
+        somx2 = torch.sqrt((1 - x) * (1 + x))  # sqrt((1 - x) * (1 + x))
+        fact = 1.0
+        for i in range(1, m + 1):
+            pmm = pmm * (-fact) * somx2  # Recursively compute P_m^m(x)
+            fact += 2.0
+    if l == m:
+        return pmm
+    
+    # P_m^(m+1)(x): Next step in the recursion
+    pmmp1 = x * (2.0 * m + 1.0) * pmm
+    if l == m + 1:
+        return pmmp1
+    
+    # P_l^m(x): General case for l > m
+    pll = torch.zeros_like(x)
+    for ll in range(m + 2, l + 1):
+        pll = ((2.0 * ll - 1.0) * x * pmmp1 - (ll + m - 1.0) * pmm) / (ll - m)  # Recurrence relation
+        pmm = pmmp1
+        pmmp1 = pll
+    return pll
+</code></pre>
+<div class="image-row">
+    <div class="image-container">
+        <img src="norm_factor.png" width="350"/>
+        <div class="image-caption">Third step: Normalization factor</div>
+    </div>
+</div>
+<div class="image-row">
+    <div class="image-container">
+        <img src="sh_formula.png" width="450"/>
+        <div class="image-caption">Fourth step: Spherical harmonic formula</div>
+    </div>
+</div>
+<pre><code class="language-python">def compute_normalization_factor(self, l, m):
+    """ Step 3 Compute the normalization factor for the spherical harmonic function """
+    # Normalization factor to ensure orthonormality of the spherical harmonics
+    numerator = (2.0 * l + 1.0) * math.factorial(l - m)
+    denominator = 4 * math.pi * math.factorial(l + m)
+    return math.sqrt(numerator / denominator)
+
+def evaluate_spherical_harmonic(self, l, m, theta, phi):
+    """ Step 4: Evaluate the spherical harmonic function Y_l^m for given theta and phi """
+    # Evaluate Y_l^m based on whether m is positive, negative, or zero
+    if m == 0:
+        return self.compute_normalization_factor(l, m) * self.compute_associated_legendre_polynomial(l, m, torch.cos(theta))
+    elif m > 0:
+        return math.sqrt(2.0) * self.compute_normalization_factor(l, m) * \
+                torch.cos(m * phi) * self.compute_associated_legendre_polynomial(l, m, torch.cos(theta))
+    else:
+        return math.sqrt(2.0) * self.compute_normalization_factor(l, -m) * \
+                torch.sin(-m * phi) * self.compute_associated_legendre_polynomial(l, -m, torch.cos(theta))
+</code></pre>
+<p>Last but not least, we need to iterate over all basis functions and compute their values for each grid point.</p>
+<pre><code class="language-python">def construct_environment_map_from_sh_coeffs(self, sh_coeffs, smooth=False):
+    """Construct an environment map from the given spherical harmonic coefficients """
+    ...
+    # Loop through each band and order to compute the environment map
+    for l in range(bands):
+        for m in range(-l, l + 1):
+            sh_value = self.evaluate_spherical_harmonic(l, m, theta, phi)
+            result = result + sh_value.view(sh_value.shape[0], sh_value.shape[1], 1) * smoothed_coeffs[:, i]
+            i += 1
+
+    # Ensure non-negative values in the result
+    result = torch.max(result, torch.zeros(res[0], res[1], smoothed_coeffs.shape[0], device=smoothed_coeffs.device))
+    ...
+</code></pre>
+<p>To see the whole <code>SphericalHarmonics</code> class implementation, refer to the <a href="https://colab.research.google.com/gist/ostapagon/ed544a229cfe4d92472460fe5d347395/spherical_harmonics_lighting_pytorch3d.ipynb">notebook code</a>.<br>With this class we can now generate environment map from the given SH coefficients, but now comes more 3D Graphics stuff.</p>
+
+<h2 id="scene-illumination-with-environment-maps">Scene Illumination with Environment Maps</h2>
+<ul>
+  <li>Calculating specular reflections</li>
+  <li>Calculating diffuse lighting</li>
+  <li>Sampling the Environment Map</li>
+</ul>
+<p>To render the scene with 2D Env Map we are going to use PyTorch3D library. It provides a lot of useful tools for 3D graphics tasks. We are going to use <code>MeshRenderer</code>, <code>SoftPhongShader</code> and <code>FoVPerspectiveCameras</code> to render our scene. Pytorch3D library provides different types of lighting schemes - <code>PointLights</code>, <code>DirectionalLights</code>, <code>AmbientLights</code> and <code>SpotLights</code>. But to use our new Environment Map generated from SH, we are going to implement our own lighting class <code>EnvMapLights</code>.</p>
+<p>When light interacts with the surface of an object, it can be reflected in different ways:</p>
+<ul>
+  <li><b>Specular reflection</b> - light is reflected in a specific direction, creating a shiny or mirror-like appearance.</li>
+  <li><b>Diffuse reflection</b> - light is scattered in all directions, creating a diffuse appearance.</li>
+</ul>
+<p><b>Specular reflection</b> is responsible for creating highlights and shiny surfaces. Incoming light rays $R_{\text{in}}$ bounces off the surface and becomes $R_{\text{out}}$. $R_{\text{out}}$ has the same angle to surface normal $N$ as $R_{\text{in}}$. To calculate $R_{\text{out}}$ we need to reflect $R_{\text{in}}$ over the surface normal $N$. We will use newly calculated $R_{\text{out}}$ to sample lighting value from the Environment Map.</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="specular_reflection.jpg" width="700"/>
+        <div class="image-caption">Specular reflection</div>
+    </div>
+</div>
+<p><b>Diffuse reflection</b> is responsible for creating a diffuse appearance. In this case, light is scattered in all directions, creating a uniform illumination across the surface. Due to the roughness of the surface incoming rays $R_{\text{in}}$ are reflected in different directions. Instead of modeling each ray reflection depending on the point it hits, we just use the normal $\overline{N}$ average of $N_0, N_1, N_2$. $\overline{N}$ nicely describes small region of the surface and used to sample lighting value from the Environment Map. It will provide average lighting value of rays scattered across that surface region.</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="diffuse_reflection.jpg" width="700"/>
+        <div class="image-caption">Diffuse reflection</div>
+    </div>
+</div>
+
+<p>To sample values from Environment Map for specular reflection use $R_{\text{out}}$ direction and for diffuse reflection use normal $\overline{N}$. Now the question is how having 2 direction vectors get light values from 2D map images. It is actually quite simple:</p>
+<ol>
+<li>Convert $(x,y,z)$ euclidian direction vector to spherical coordinates ($\theta, \phi$);</li>
+<li>Normalize $\theta$ and $\phi$ to uv coordinates in $[0, 1]$ range;</li>
+<li>Use uv coordinates to sample lighting value from the Environment Map.</li>
+</ol>
+<p>But because we are <s>lazy</s>smart we'll skip the intermediate convertion to $\theta$ and $\phi$ and directly convert $(x,y,z)$ to uv coordinates. $[-1, 1]$ range is needed as <code>torch.nn.functional.grid_sample</code> expects input mapped in this range.</p>
+<pre><code class="language-python">def _convert_to_uv(self, directions):
+    # Calculate the square of each component (x, y, z+1)
+    x2 = directions[..., 0] ** 2
+    y2 = directions[..., 1] ** 2
+    z2 = (directions[..., 2] + 1) ** 2
+
+    # Compute the scaling factor 'm'
+    # 'm' is twice the square root of the sum of the squares of the x, y, and z+1 coordinates
+    m = 2 * torch.sqrt(x2 + y2 + z2)[..., None]
+
+    # Scale the x and y coordinates by 'm' to normalize them
+    uv_directions = directions[..., :2] / m
+
+    # Shift the normalized coordinates to the [0, 1] range by adding 0.5
+    uv_directions = uv_directions + 0.5
+
+    # Rescale the coordinates to the [-1, 1] range
+    uv_directions = uv_directions * 2 - 1
+
+    return uv_directions
+</code></pre>
+
+<h2 id="implementation-with-pytorch3d">Implementation with PyTorch3D</h2>
+<ul>
+  <li>Overview of the <code>EnvMapLighting</code> class</li>
+  <li>Integration with PyTorch3D's rendering pipeline</li>
+  <li>Optimizing Environment Map Lighting via Spherical Harmonics coefficients</li>
+</ul>
+<p><code>EnvMapLighting</code> class is in Pytorch3D library style implements two main methods:</p>
+<ol>
+<li><code>def diffuse(self, normals, points=None):</code></li>
+<li><code>def specular(self, normals, points, camera_position, shininess):</code></li>
+</ol>
+<p>In <code>EnvMapLighting.diffuse</code> method we use normals of the surface, convert them to uv coordinates in $[-1, 1]$ range and sample lighting value from the Environment Map.</p>
+<pre><code class="language-python">def diffuse(self, normals, points=None) -> torch.Tensor:
+        """
+        Calculate the diffuse component of light reflection using Lambert's
+        cosine law.
+
+        Args:
+            normals: (N, ..., 3) xyz normal vectors. Normals and points are
+                expected to have the same shape.
+            color: (1, 3) or (N, 3) RGB color of the diffuse component of the light.
+            direction: (x,y,z) direction of the light
+
+        Returns:
+            colors: (N, ..., 3), same shape as the input points.
+        """
+        ...
+        # Renormalize the normals in case they have been interpolated.
+        # We tried to replace the following with F.cosine_similarity, but it wasn't faster.
+        normals = F.normalize(normals, p=2, dim=-1, eps=1e-6)
+        uv_normals = self._convert_to_uv(normals)
+
+        # Convert color from (B, H, W, 1, 3) to (B, 3, H, W) for sampling
+        # Convert uv normals from (B, H, W, 1, 2) to (B, H, W, 2)
+        input_color = color.squeeze(-2).permute(0, 3, 1, 2)
+        grid_uv_normals = uv_normals.squeeze(-2)
+
+        sampled_color = torch.nn.functional.grid_sample(input_color, grid_uv_normals, padding_mode="reflection", align_corners=False)
+        ...
+</code></pre>
+<p>In <code>EnvMapLighting.specular</code> method a bit more steps as at first $R_{\text{out}}$ is calculated and then converted to uv coordinates.</p>
+<pre><code class="language-python">def specular(self, normals, points, camera_position, shininess) -> torch.Tensor:
+    """
+    Calculate the specular component of light reflection.
+
+    Args:
+        points: (N, ..., 3) xyz coordinates of the points.
+        normals: (N, ..., 3) xyz normal vectors for each point.
+        direction: (N, 3) vector direction of the light.
+        camera_position: (N, 3) The xyz position of the camera.
+        shininess: (N)  The specular exponent of the material.
+
+    Returns:
+        colors: (N, ..., 3), same shape as the input points.
+    """
+    ...
+    normals = F.normalize(normals, p=2, dim=-1, eps=1e-6)
+    # Calculate the specular reflection.
+    view_direction = camera_position - points
+    view_direction = F.normalize(view_direction, p=2, dim=-1, eps=1e-6) # R_in
+
+    cos_angle = torch.sum(normals * view_direction, dim=-1)
+    # No specular highlights if angle is less than 0.
+    mask = (cos_angle > 0).to(torch.float32)
+
+
+    reflect_direction = -view_direction + 2 * (cos_angle[..., None] * normals) # R_out
+    reflect_direction = torch.nn.functional.normalize(reflect_direction, dim=-1) # R_out
+
+    uv_reflect_direction = self._convert_to_uv(reflect_direction)
+    # Convert color from (B, H, W, 1, 3) to (B, 3, H, W) for sampling
+    # Convert uv reflect directions from (B, H, W, 1, 2) to (B, H, W, 2)
+    input_color = color.squeeze(-2).permute(0, 3, 1, 2)
+    grid_uv_reflect_direction = uv_reflect_direction.squeeze(-2)
+
+    sampled_color = torch.nn.functional.grid_sample(input_color, grid_uv_reflect_direction, padding_mode="reflection", align_corners=False)
+    # Convert from sampled color (B, 3, H, W) to (B, H, W, 1, 3) like normals dims
+    color = sampled_color.permute(0, 2, 3, 1).unsqueeze(-2)
+    ...
+</code></pre>
+<p>The <strong>shininess</strong> parameter in the <code>EnvMapLighting.specular</code> method controls the sharpness and intensity of the specular highlights on a surface. It is a fundamental part of the Phong reflection model, which is widely used to simulate how light reflects off a surface.</p>
+<p>Having all the puzzle pieces put together we can now reconstruct the scene illumination with Environment Map generated from SH coefficients. I previously generated a training dataset $I_{\text{p}}$ of a cow mesh using 10 different camera angles and a <code>PointLights</code> illumination scheme from PyTorch3D. Now we can use the same camera angles and mesh to recreate the <code>PointLights</code> lighting with our <code>EnvMapLighting</code> class and see it`s capabilities.</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="cow_train_data.png" width="700"/>
+        <div class="image-caption">Training Images with PointLights illumination</div>
+    </div>
+</div>
+<p>To begin with we have to initialize our <code>SphericalHarmonics</code> class and define the loss function and optimizer. Our resulting Env Map will be a $256 \times256$ image. Usually, to reconstruct scene illumination first 3 bands of spherical harmonics are enough. In most cases scene light is smooth and does not require high frequency oscillations. This means we have $3^2 = 9$ coefficients to optimize. Also, in our experiment we will use 2 sets of coefficients for diffuse and specular lighting seperately to have more control over the lighting. During optimization of SH coefficients we will use simple MSE loss function and Adam optimizer.</p>
+<pre><code class="language-python">sh = SphericalHarmonics(256, device='cuda:0')
+
+batch_size = 1
+sh_coeffs = 9 # order 3
+learning_rate = 0.02
+num_epochs = 300  # Adjust as needed
+
+# Initialize coefficients
+diffuse_sh_coefs = torch.ones((batch_size, sh_coeffs, 3), device='cuda:0')
+diffuse_sh_coefs.requires_grad = True
+
+
+specular_sh_coefs = torch.ones((batch_size, sh_coeffs, 3), device='cuda:0')
+specular_sh_coefs.requires_grad = True
+
+# Define loss function and optimizer
+loss_function = torch.nn.MSELoss()
+optimizer = torch.optim.Adam([diffuse_sh_coefs, specular_sh_coefs], lr=learning_rate)
+</code></pre>
+<p>But why <code>torch.ones((batch_size, band, 3), device='cuda:0')</code> use 3 sets of coefficients? Because we have 3 channels in our RGB image and we need each set of coefficients for each channel. As a result for diffuse lighting $3 * 9 = 27$ and for specular lighting $3 * 9 = 27$ coefficients. Next step is just to optimize our coefficients in a loop, generate Environment Map from SH coefficients and calculate loss.</p>
+<pre><code class="language-python">for epoch in range(num_epochs):
+    optimizer.zero_grad()
+
+    # Generate environment map from spherical harmonics coefficients
+    diffuse_envmap = sh.convert_sh_to_environment_map(diffuse_sh_coefs).clip(0, 1)
+    specular_envmap = sh.convert_sh_to_environment_map(specular_sh_coefs).clip(0, 1)
+
+    pred_images = renderer(meshes, lights=EnvMapLights(diffuse_color=diffuse_envmap,
+                                                       specular_color=specular_envmap,
+                                                       device=device), materials=materials, cameras=cameras)
+    loss = loss_function(pred_images, images)
+
+    # Backpropagation and optimization step
+    loss.backward()
+    optimizer.step()
+
+    if epoch % 10 == 0:  # Print progress every 100 epochs
+        print(f'Epoch [{epoch}/{num_epochs}], Loss: {loss.item()}')
+</code></pre>
+<pre><code>Iteration [0/300], Loss: 0.021584568545222282
+Iteration [30/300], Loss: 0.01247326284646988
+Iteration [60/300], Loss: 0.002377513563260436
+Iteration [90/300], Loss: 0.0010528614511713386
+Iteration [120/300], Loss: 0.0007361799362115562
+Iteration [150/300], Loss: 0.000530929712112993
+Iteration [180/300], Loss: 0.00036182499025017023
+Iteration [210/300], Loss: 0.00023683365725446492
+Iteration [240/300], Loss: 0.00016318858251906931
+Iteration [270/300], Loss: 0.00013571616727858782
+Iteration [300/300], Loss: 0.000126944956718944
+Training finished!
+</code></pre>
+<p>With each iteration loss reduces meaning our coefficients are getting closer to the optimal values. After 300 iterations we can see that our Environment Map is pretty close to the original training images.</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="diffuse_specular_envmaps.png" width="700"/>
+        <div class="image-caption">Reconstructed Diffuse and Specular Environment Maps</div>
+    </div>
+</div>
+<div class="image-row">
+    <div class="image-container">
+        <img src="cow_reconstructed_data.png" width="700"/>
+        <div class="image-caption">Test Images with Environment Map Lighting</div>
+    </div>
+</div>
+<p>Images above generated with Environment Map Lighting from SH coefficients. We can see that SH coefficents is able to reconstruct the scene illumination with smooth lighting transitions.</p>
+<p>To make one step further, we can zoom out of the scene and orbit around the cow wrapped in the environment map lighting optimized with SH coefficients.</p>
+<div class="image-row">
+    <div class="image-container">
+        <img src="diffuse_orbitaround.gif" width="300" style="animation-delay: 0s;">
+        <div class="image-caption"><strong>Diffuse Env Map</strong></div>
+    </div>
+    <div class="image-container">
+        <img src="specular_orbitaround.gif" width="300" style="animation-delay: 0s;">
+        <div class="image-caption"><strong>Specular Env Map</strong></div>
+    </div>
+</div>
+<h2>All Together: Lighting with Spherical Harmonics</h2>
+<p>By combining all the components we've discussed, we've concocted a magical potion for scene illumination using spherical harmonics! Abracadabra! I hope this all makes sense to you.</p>
+<p>And in case not, let's quickly summarize.</p>
+<p>We started by wrapping our scene in a giant bubble and using spherical harmonics as our special set of building blocks to represent complex lighting patterns on its surface. By understanding the concept of orthogonal basis functions—much like in Fourier Series—we saw how we can approximate any function on the sphere's surface without recalculating previous coefficients.</p>
+<p>Next, we converted these spherical harmonics into 2D environment maps. We hid the heavy math inside a handy class that computes associated Legendre polynomials and normalization factors, making it easier to generate and work with these maps.</p>
+<p>Then, we explored how light interacts with surfaces through specular and diffuse reflections. By converting our 3D direction vectors directly into UV coordinates, we made sampling from the environment map straightforward and efficient.</p>
+<p>Finally, we implemented everything using PyTorch3D. We optimized the spherical harmonics coefficients to match our training images, and with each iteration, our lighting got smoother and more accurate. This demonstrated the effectiveness of using SH coefficients in environment map lighting.</p>
+<p>This is it for using spherical harmonics for environment map lighting! I hope this post served you well. Don't forget to run the code in Google Colab to try it all out yourself. Please don't hesitate to reach out and ask any questions.</p>
+<p><a href="https://colab.research.google.com/gist/ostapagon/ed544a229cfe4d92472460fe5d347395/spherical_harmonics_lighting_pytorch3d.ipynb"><strong>🚀 Open in Google Colab - Happy rendering!</strong></a></p>
+</div>
+</article>
+
+</main>
+
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-links">
+            <a href="https://ostapagon.github.io/">Home</a>
+            <a href="https://ostapagon.github.io/posts/">Posts</a>
+            <a href="https://github.com/ostapagon">GitHub</a>
+            <a href="https://twitter.com/ostapagone">Twitter</a>
+            <a href="https://www.linkedin.com/in/ostap-hembara/">LinkedIn</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 ostapagon. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerText = 'copy';
+
+        function copyingDone() {
+            copybutton.innerText = 'copied!';
+            setTimeout(() => {
+                copybutton.innerText = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+
+<!-- Fallback for highlight.js -->
+<script>
+function loadHighlightJSFallback() {
+    console.log('Primary highlight.js failed, loading fallback from CDN');
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    script.onload = function() {
+        hljs.highlightAll();
+        console.log('Fallback highlight.js loaded and initialized');
+    };
+    script.onerror = function() {
+        console.error('Both primary and fallback highlight.js failed to load');
+    };
+    document.head.appendChild(script);
+    
+    // Also load Python language support
+    var pythonScript = document.createElement('script');
+    pythonScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js';
+    pythonScript.onload = function() {
+        hljs.highlightAll();
+    };
+    document.head.appendChild(pythonScript);
+}
+
+// Additional debugging and manual initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if highlight.js loaded
+    if (typeof hljs === 'undefined') {
+        console.log('highlight.js not loaded, attempting fallback');
+        loadHighlightJSFallback();
+    } else {
+        console.log('highlight.js loaded successfully');
+        // Ensure all code blocks are highlighted
+        setTimeout(function() {
+            hljs.highlightAll();
+        }, 100);
+    }
+});
+</script>
+
+
+
+</body>
+</html> 

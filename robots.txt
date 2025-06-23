@@ -1,0 +1,3 @@
+User-agent: *
+Disallow:
+Sitemap: https://ostapagon.github.io/sitemap.xml

@@ -1,18 +1,24 @@
-# Site settings
-title: Ostap Hembara Blog
-email: 
-description: ""
-baseurl: ""
-url: "http://ostapagon.github.io"
-twitter_username: ostapagone
-github_username:  ostapagon
+title: Your Blog Title
+description: Your blog description
+author: Your Name
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+
+# Google Analytics
+google_analytics_id: ENV["GOOGLE_ANALYTICS_ID"] # Fallback to default for local development
 
 # Build settings
 markdown: kramdown
-permalink: pretty
+plugins:
+  - jekyll-feed
+  - jekyll-sitemap
 
-highlighter: rouge
-kramdown:
-  input: GFM
-  auto_ids: true
-  syntax_highlighter: rouge
+# Exclude from processing
+exclude:
+  - Gemfile
+  - Gemfile.lock
+  - node_modules
+  - vendor
+  - .git
+  - .env
+  - .env.* 

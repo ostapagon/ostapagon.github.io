@@ -1,2 +1,9 @@
-Gemfile.lock
-_site
+*~
+.dropbox
+.DS_Store
+Icon*
+.env
+.env.*
+_site/
+.jekyll-cache/
+.jekyll-metadata

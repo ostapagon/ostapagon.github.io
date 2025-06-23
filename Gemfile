@@ -1,9 +1,9 @@
-# Gemfile
-
 source "https://rubygems.org"
 
-gem "jekyll"
-gem "github-pages", group: :jekyll_plugins
+gem "jekyll", "~> 4.4.1"
+gem "webrick", "~> 1.8"
 
-# Optional: Specify a Ruby version
-ruby ">= 2.7.0"
+group :jekyll_plugins do
+  gem "jekyll-feed", "~> 0.12"
+  gem "jekyll-sitemap", "~> 1.4"
+end 
