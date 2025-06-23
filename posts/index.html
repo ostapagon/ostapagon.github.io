@@ -58,23 +58,14 @@
             <a href="https://ostapagon.github.io/" accesskey="h" title="ostapagon (Alt + H)">ostapagon</a>
             <span class="logo-switches">
                 <button id="theme-toggle" accesskey="t" title="(Alt + T)">
-                    <svg id="moon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
-                    </svg>
-                    <svg id="sun" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"
-                        fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                        stroke-linejoin="round">
-                        <circle cx="12" cy="12" r="5"></circle>
-                        <line x1="12" y1="1" x2="12" y2="3"></line>
-                        <line x1="12" y1="21" x2="12" y2="23"></line>
-                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
-                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
-                        <line x1="1" y1="12" x2="3" y2="12"></line>
-                        <line x1="21" y1="12" x2="23" y2="12"></line>
-                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
-                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                    <svg id="yin-yang-icon" class="yin-yang-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="48" fill="#fff" stroke="currentColor" stroke-width="4"/>
+                        <path d="M50,2
+                                 a48,48 0 1,1 0,96
+                                 a24,24 0 1,0 0,-48
+                                 a24,24 0 1,1 0,-48z" fill="#000"/>
+                        <circle cx="50" cy="26" r="10" fill="#000"/>
+                        <circle cx="50" cy="74" r="10" fill="#fff"/>
                     </svg>
                 </button>
             </span>
@@ -109,7 +100,7 @@
       </h2>
     </header>
     <section class="entry-content">
-      <p>Spherical Harmonics Lighting</p>
+        <p>This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling. This approach transforms spherical harmonics into 2D image that can be easily understood, analyzed and regularized. Don`t forget to run the code in google colab to try it all by yourself.</p>
     </section>
     <footer class="entry-footer">Date: Oct 31, 2024  |  Estimated Reading Time: 40 min  |  Author: Ostap Hembara</footer>
     <a class="entry-link" aria-label="post link to Spherical Harmonics Lighting" href="https://ostapagon.github.io/posts/2024-10-31-sh-lighting/"></a>

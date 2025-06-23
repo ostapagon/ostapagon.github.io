@@ -1,3 +1,18 @@
 .logo {
     margin-left: -20px;
 }
+.yin-yang-icon {
+    transition: filter 0.3s, transform 0.3s;
+    vertical-align: middle;
+    margin-bottom: 2px;
+}
+body.dark .yin-yang-icon {
+    filter: drop-shadow(0 0 2px #000) brightness(0.7);
+    transform: rotate(180deg);
+}
+.yin-yang-icon circle[fill="#fff"], .yin-yang-icon path[fill="#fff"] {
+    filter: drop-shadow(0 0 2px #fff) brightness(1.2);
+}
+body.dark .yin-yang-icon path[fill="#000"], body.dark .yin-yang-icon circle[fill="#000"] {
+    filter: drop-shadow(0 0 2px #000) brightness(0.7);
+}
