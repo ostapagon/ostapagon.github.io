@@ -361,6 +361,8 @@
                 <li>
                     <a href="#rendering-3d-scene" aria-label="Rendering a 3D Scene">Rendering a 3D Scene</a></li>
                 <li>
+                    <a href="#reconstructing-3d-scene" aria-label="Reconstructing 3D Scene">Reconstructing 3D Scene</a>
+                </li>
                     <a href="#3d-point-clouds-with-colmap" aria-label="3D Point Clouds with COLMAP">3D Point Clouds with COLMAP</a></li>
                 <li>
                     <a href="#dust3r" aria-label="DUST3R">DUST3R</a></li>
@@ -423,6 +425,46 @@
     <li><strong>Projection:</strong> This is the geometric heart of rendering. The engine takes the list of 3D vertices from our mesh and multiplies them by the world-to-camera matrix and then by the perspective camera-to-view matrix. This series of matrix multiplications is a powerful mathematical operation that effectively projects each 3D vertex onto the camera's 2D image plane. The result is a new set of 2D vertices that represent the object's silhouette from the camera's point of view.</li>
     
     <li><strong>Shading (or Rasterization):</strong> Simply projecting the vertices gives us a 2D wireframe. To create a solid, realistic image, we need to fill in the pixels. This step, often called rasterization or shading, determines the final color of each pixel covered by our 2D projected shape. The graphics pipeline iterates over the pixels within the projected triangles of the mesh and calculates their color based on various factors: the object's base color (texture), its material properties (e.g., how shiny or rough it is), the location and intensity of lights in the scene, and whether the pixel is in shadow. The result is the final shaded, textured, and lit 2D image that we see on our screen.</li>
+</ul>
+
+<h2 id="reconstructing-3d-scene">Reconstructing 3D Scene</h2>
+
+<h3>Inputs and Initial Problems</h3>
+
+<p>The journey of reconstruction typically begins with a set of overlapping images of a scene, often sourced from the frames of a video 📹. This collection of 2D views is our only input. From this, we must solve two fundamental problems before we can even think about building a 3D model.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="triangulation.png" width="600"/>
+        <div class="image-caption">Triangulation: By matching the same point across multiple camera views,<br> we can determine its 3D position in space.<br>(Image source: <a href="https://www.researchgate.net/figure/Schematic-of-the-triangulation-in-3D-reconstruction-Identical-points-across-the-images_fig83_342869212" target="_blank">3D Reconstruction from Multiple Images</a>)</div>
+    </div>
+</div>
+
+<p>First is <strong>camera pose retrieval</strong>. As a camera moves through a scene, its position and orientation change with every frame. We must accurately calculate this 6-DoF (six degrees of freedom: 3 for position, 3 for rotation) pose for each image to understand where it was taken from.</p>
+
+<p>Second, we must determine the <strong>depth for each pixel</strong>. Depth estimation tells us how far every point in the scene is from the camera, transforming our flat images into a spatial map.</p>
+
+<p>Solving for camera poses and depth across multiple views is a complex geometric puzzle known as <strong>Structure from Motion (SfM)</strong> and <strong>Multi-View Stereo (MVS)</strong>.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="image.png" width="500"/>
+        <div class="image-caption">A 3D point cloud reconstructed from multiple images of a turtle</div>
+    </div>
+</div>
+
+<h3>From Problems to Representations</h3>
+
+<p>Once we have a handle on the camera poses and depth maps, we can begin to build the actual 3D representation. The choice of representation dictates the nature and quality of the final model:</p>
+
+<ul>
+    <li><strong>Point Clouds:</strong> By taking the depth value of a pixel and projecting it into 3D space using its corresponding camera pose, we can create a point cloud. This is the most direct output of the initial reconstruction steps—a raw, foundational skeleton of the scene. While useful for understanding the basic geometry, this representation is shallow because it consists only of disconnected points and lacks surfaces for realistic rendering.</li>
+    
+    <li><strong>Explicit Meshes:</strong> To create a more solid and tangible model, we can process a point cloud to generate an explicit mesh. Algorithms connect the individual 3D points to form a continuous surface of polygons (usually triangles). This gives us a watertight model that can be properly textured and lit, making it ideal for applications like games or simulations.</li>
+    
+    <li><strong>Implicit Representations (NeRFs):</strong> A more modern approach bypasses creating an explicit mesh altogether. A Neural Radiance Field (NeRF) is a neural network that acts as an implicit representation. It learns a continuous function directly from the images and their camera poses. By feeding the network a 3D coordinate and a viewing direction, it outputs the color and density at that point. This allows for the rendering of incredibly photorealistic novel views by effectively learning both the geometry (like depth) and appearance (color and light interaction) of the entire scene at once.</li>
+    
+    <li><strong>Hybrid Representations (3D Gaussian Splatting):</strong> Occupying a powerful middle ground, 3D Gaussian Splatting has recently emerged. This technique takes the initial point cloud (generated from SfM) and converts each point into a 3D Gaussian—a soft, colored, transparent blob. These Gaussians are an explicit representation that can be "splatted" or projected onto a 2D plane with extreme efficiency. This hybrid approach achieves the photorealism of NeRFs but with the significant advantage of real-time rendering speeds, marking a major leap forward for the field.</li>
 </ul>
 
 <h2 id="3d-point-clouds-with-colmap">3D Point Clouds with COLMAP</h2>
