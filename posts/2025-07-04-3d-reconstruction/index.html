@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>3D Reconstruction: From Hours to Minutes | ostapagon's Blog</title>
+<meta name="keywords" content="TODO" />
+<meta name="description" content="TODO">
+<meta name="author" content="Ostap Hembara">
+<link rel="canonical" href="http://127.0.0.1:4000/posts/2025-07-04-3d-reconstruction/" />
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.51b2420ff5ea1215cdf584af7ba59d5fea94201c33f25109d6448c7271631316.css" integrity="sha256-UbJCD/XqEhXN9YSve6WdX&#43;qUIBwz8lEJ1kSMcnFjExY=" rel="preload stylesheet" as="style">
+<link rel="stylesheet" href="/assets/css/custom.css">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.min.2eadbb982468c11a433a3e291f01326f2ba43f065e256bf792dbd79640a92316.js" integrity="sha256-Lq27mCRowRpDOj4pHwEybyukPwZeJWv3ktvXlkCpIxY="
+    onload="hljs.initHighlightingOnLoad();" onerror="loadHighlightJSFallback();"></script>
+<link rel="icon" href="https://ostapagon.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://ostapagon.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://ostapagon.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://ostapagon.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://ostapagon.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="http://127.0.0.1:4000/posts/2025-07-04-3d-reconstruction/" />
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$','$$'], ['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+  };
+
+  window.addEventListener('load', (event) => {
+      document.querySelectorAll("mjx-container").forEach(function(x){
+        x.parentElement.classList += 'has-jax'})
+    });
+
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+.post-header h1 {
+    font-size: 35px;
+}
+.post pre,
+.post code {
+    background-color: #fcfcfc;
+    font-size: 13px; /* make code smaller for this post... */
+}
+
+/* Enhanced syntax highlighting CSS */
+.post pre code {
+    background-color: transparent !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    line-height: 1.4;
+}
+
+/* Unified syntax highlighting using dark theme palette for both light and dark modes */
+.hljs-keyword { color: #ff7b72 !important; font-weight: bold !important; }
+.hljs-string { color: #a5d6ff !important; }
+.hljs-number { color: #79c0ff !important; }
+.hljs-comment { color: #8b949e !important; font-style: italic !important; }
+.hljs-function { color: #d2a8ff !important; }
+.hljs-class { color: #d2a8ff !important; }
+.hljs-name { color: #d2a8ff !important; }
+.hljs-built_in { color: #79c0ff !important; }
+.hljs-literal { color: #79c0ff !important; }
+.hljs-params { color: #e6edf3 !important; }
+.hljs-attr { color: #ff7b72 !important; }
+.hljs-title { color: #d2a8ff !important; font-weight: bold !important; }
+.image-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: nowrap;
+}
+.image-row img {
+    display: block;
+    margin: 0 auto;
+}
+.image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 0 0 auto;
+}
+.image-caption {
+    margin-top: 10px;
+    font-style: italic;
+    color: #666;
+    font-size: 16px;
+}
+
+.image-container img[src="diffuse_reflection.jpg"] {
+    margin-left: 20px;
+}
+
+/* Footer links styling - make them display horizontally */
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.footer-links a {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.footer-links a:hover {
+    color: #007acc;
+}
+
+
+/* .logo {
+    margin-left: -100px;
+} */
+</style>
+
+</head>
+
+<body class="" id="top">
+    <noscript>
+        <style>
+            #theme-toggle,
+            .top-link {
+                display: none;
+            }
+    
+        </style>
+        <style>
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --theme: rgb(29, 30, 32);
+                    --entry: rgb(46, 46, 51);
+                    --primary: rgb(218, 218, 219);
+                    --secondary: rgb(155, 156, 157);
+                    --tertiary: rgb(65, 66, 68);
+                    --content: rgb(196, 196, 197);
+                    --hljs-bg: rgb(46, 46, 51);
+                    --code-bg: rgb(55, 56, 62);
+                    --border: rgb(51, 51, 51);
+                }
+    
+                .list {
+                    background: var(--theme);
+                }
+    
+                .list:not(.dark)::-webkit-scrollbar-track {
+                    background: 0 0;
+                }
+    
+                .list:not(.dark)::-webkit-scrollbar-thumb {
+                    border-color: var(--theme);
+                }
+            }
+    
+            /* Social icons styling */
+            .lang-switch {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .lang-switch li {
+                display: flex;
+                align-items: center;
+            }
+            
+            .lang-switch a {
+                display: flex;
+                align-items: center;
+                padding: 4px;
+            }
+            
+            .lang-switch svg {
+                width: 16px;
+                height: 16px;
+            }
+    
+        </style>
+</noscript>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-NRCFMZDRR3"></script>
+        <script>
+        var doNotTrack = false;
+        if ( false ) {
+            var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+            var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-NRCFMZDRR3');
+        }
+        </script><meta property="og:title" content="ostapagon: Your Blog Title" />
+<meta property="og:description" content="ostapagon: Your blog description" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ostapagon.github.io/" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ostapagon: Your Blog Title"/>
+<meta name="twitter:description" content="ostapagon: Your blog description."/>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "ostapagon: Your Blog Name",
+    "url": "ostapagon: Your site URL",
+    "description": "ostapagon: Your blog description",
+    "thumbnailUrl": "ostapagon: Your favicon path",
+    "sameAs": [
+        "https://github.com/ostapagon",
+        "https://twitter.com/ostapagone"
+    ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<script>
+    MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$','$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+    },
+    options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+    };
+
+    window.addEventListener('load', (event) => {
+        document.querySelectorAll("mjx-container").forEach(function(x){
+        x.parentElement.classList += 'has-jax'})
+    });
+
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://ostapagon.github.io/" accesskey="h" title="ostapagon">ostapagon</a>
+            <span class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="yin-yang-icon" class="yin-yang-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="48" fill="#fff" stroke="currentColor" stroke-width="4"/>
+                        <path d="M50,2
+                                 a48,48 0 1,1 0,96
+                                 a24,24 0 1,0 0,-48
+                                 a24,24 0 1,1 0,-48z" fill="#000"/>
+                        <circle cx="50" cy="26" r="10" fill="#000"/>
+                        <circle cx="50" cy="74" r="10" fill="#fff"/>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </span>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://ostapagon.github.io/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://ostapagon.github.io/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title">
+        3D Reconstruction: From Hours to Minutes
+
+    <div class="post-meta">Date: Jul 04, 2025  |  Estimated Reading Time: min  |  Author: Ostap Hembara
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#rendering-3d-scene" aria-label="Rendering a 3D Scene">Rendering a 3D Scene</a></li>
+                <li>
+                    <a href="#3d-point-clouds-with-colmap" aria-label="3D Point Clouds with COLMAP">3D Point Clouds with COLMAP</a></li>
+                <li>
+                    <a href="#dust3r" aria-label="DUST3R">DUST3R</a></li>
+                <li>
+                    <a href="#mast3r-sfm" aria-label="MASt3R-SFM">MASt3R-SFM</a></li>                
+                <li>
+                    <a href="#nerfs-neural-radiance-fields" aria-label="NeRFs: Neural Radiance Fields">NeRFs: Neural Radiance Fields</a></li>
+                <li>
+                    <a href="#3d-gaussian-splatting" aria-label="3D Gaussian Splatting">3D Gaussian Splatting</a></li>
+                <li>
+                    <a href="#from-theory-to-practice" aria-label="From Theory to Practice">From Theory to Practice</a></li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+<div class="post-content">
+
+<h2 id="rendering-3d-scene">Rendering a 3D Scene</h2>
+
+<p>At its core, computer graphics is about creating two-dimensional images from three-dimensional virtual worlds. This process, known as rendering, is a fascinating blend of geometry, linear algebra, and physics simulation. Let's break down how we go from an abstract 3D object to a final, viewable image.</p>
+
+<h3>The Building Blocks: 3D Objects as Meshes</h3>
+
+<p>Every object you see in a game or an animated film starts as a collection of points in 3D space. These points are called <strong>vertices</strong>, each having a specific $(x, y, z)$ coordinate. To create a solid surface, we connect these vertices to form flat polygons, which are called <strong>faces</strong>. Most commonly, these faces are triangles or quadrilaterals (quads).</p>
+
+<p>This collection of vertices and faces is known as a <strong>3D mesh</strong>. Think of it as a digital sculpture or a blueprint that defines the shape and structure of any object in the 3D world, whether it's a simple cube or a complex character.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="3d_object.png" width="600"/>
+        <div class="image-caption">Elements of 3D objects: vertices, edges, faces, and surfaces.<br>Image from <a href="https://en.wikipedia.org/wiki/Polygon_mesh#/media/File:Mesh_overview.svg" target="_blank">Wikipedia</a>.</div>
+    </div>
+</div>
+
+<h3>The Observer: The Virtual Camera</h3>
+
+<p>To see our 3D mesh, we need a virtual camera. Just like a real-world camera, its purpose is to capture a specific view of the scene. In computer graphics, a camera's properties are defined by two crucial sets of information, often represented by matrices:</p>
+
+<ul>
+    <li><strong>World-to-Camera (W2C) Matrix:</strong> This is an extrinsic matrix that defines the camera's position and orientation in the 3D world. It answers the questions: Where is the camera located? And which direction is it pointing? It transforms the coordinates of all objects from the global "world space" into "camera space," where the camera is effectively at the origin (0,0,0) and looking down a specific axis (like the negative Z-axis).</li>
+    
+    <li><strong>Camera-to-View (C2V) Matrix:</strong> This is an intrinsic matrix, also known as the projection matrix. It defines the camera's internal properties, like the lens. It dictates how the 3D scene is flattened onto a 2D plane, creating the sense of perspective. Key attributes controlled by this matrix include the field of view (acting like a zoom lens), the aspect ratio (matching the final image dimensions), and the near and far clipping planes (defining the range of visible depths).</li>
+</ul>
+
+<h3>The Rendering Process: From 3D to 2D</h3>
+
+<p>With our 3D mesh and camera in place, the rendering process can begin. It's fundamentally a two-step procedure that uses the matrices we just discussed to transform our 3D data into a 2D image.</p>
+
+<p>As illustrated in the diagram below, a 3D mesh exists in its own coordinate system within the larger 3D space. The rendering pipeline transforms the vertices of this mesh into the 2D pixel grid of the camera's view.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="3d_scene.png" width="700"/>
+        <div class="image-caption">The rendering pipeline transforms 3D meshes into 2D images through projection and shading</div>
+    </div>
+</div>
+
+<ul>
+    <li><strong>Projection:</strong> This is the geometric heart of rendering. The engine takes the list of 3D vertices from our mesh and multiplies them by the world-to-camera matrix and then by the perspective camera-to-view matrix. This series of matrix multiplications is a powerful mathematical operation that effectively projects each 3D vertex onto the camera's 2D image plane. The result is a new set of 2D vertices that represent the object's silhouette from the camera's point of view.</li>
+    
+    <li><strong>Shading (or Rasterization):</strong> Simply projecting the vertices gives us a 2D wireframe. To create a solid, realistic image, we need to fill in the pixels. This step, often called rasterization or shading, determines the final color of each pixel covered by our 2D projected shape. The graphics pipeline iterates over the pixels within the projected triangles of the mesh and calculates their color based on various factors: the object's base color (texture), its material properties (e.g., how shiny or rough it is), the location and intensity of lights in the scene, and whether the pixel is in shadow. The result is the final shaded, textured, and lit 2D image that we see on our screen.</li>
+</ul>
+
+<h2 id="3d-point-clouds-with-colmap">3D Point Clouds with COLMAP</h2>
+
+<h2 id="dust3r">DUST3R</h2>
+
+<h2 id="mast3r-sfm">MASt3R-SFM</h2>
+
+<h2 id="nerfs-neural-radiance-fields">NeRFs: Neural Radiance Fields</h2>
+
+<h2 id="3d-gaussian-splatting">3D Gaussian Splatting</h2>
+
+<h2 id="from-theory-to-practice">From Theory to Practice</h2>
+
+<h2 id="references">References</h2>
+
+<ul>
+    <li>Wikipedia contributors. "Polygon mesh." Wikipedia, The Free Encyclopedia. <a href="https://en.wikipedia.org/wiki/Polygon_mesh" target="_blank">https://en.wikipedia.org/wiki/Polygon_mesh</a> (accessed 2025).</li>
+</ul>
+
+</div>
+</article>
+
+</main>
+
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-links">
+            <a href="https://ostapagon.github.io/">Home</a>
+            <a href="https://ostapagon.github.io/posts/">Posts</a>
+            <a href="https://github.com/ostapagon">GitHub</a>
+            <a href="https://twitter.com/ostapagone">Twitter</a>
+            <a href="https://www.linkedin.com/in/ostap-hembara/">LinkedIn</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2024 ostapagon. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerText = 'copy';
+
+        function copyingDone() {
+            copybutton.innerText = 'copied!';
+            setTimeout(() => {
+                copybutton.innerText = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+
+<!-- Fallback for highlight.js -->
+<script>
+function loadHighlightJSFallback() {
+    console.log('Primary highlight.js failed, loading fallback from CDN');
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    script.onload = function() {
+        hljs.highlightAll();
+        console.log('Fallback highlight.js loaded and initialized');
+    };
+    script.onerror = function() {
+        console.error('Both primary and fallback highlight.js failed to load');
+    };
+    document.head.appendChild(script);
+    
+    // Also load Python language support
+    var pythonScript = document.createElement('script');
+    pythonScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js';
+    pythonScript.onload = function() {
+        hljs.highlightAll();
+    };
+    document.head.appendChild(pythonScript);
+}
+
+// Additional debugging and manual initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if highlight.js loaded
+    if (typeof hljs === 'undefined') {
+        console.log('highlight.js not loaded, attempting fallback');
+        loadHighlightJSFallback();
+    } else {
+        console.log('highlight.js loaded successfully');
+        // Ensure all code blocks are highlighted
+        setTimeout(function() {
+            hljs.highlightAll();
+        }, 100);
+    }
+});
+</script>
+
+
+
+</body>
+</html> 
