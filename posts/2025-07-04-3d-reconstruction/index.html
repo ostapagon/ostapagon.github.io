@@ -446,25 +446,45 @@
 
 <p>Solving for camera poses and depth across multiple views is a complex geometric puzzle known as <strong>Structure from Motion (SfM)</strong> and <strong>Multi-View Stereo (MVS)</strong>.</p>
 
-<div class="image-row">
-    <div class="image-container">
-        <img src="image.png" width="500"/>
-        <div class="image-caption">A 3D point cloud reconstructed from multiple images of a turtle</div>
-    </div>
-</div>
-
 <h3>From Problems to Representations</h3>
 
 <p>Once we have a handle on the camera poses and depth maps, we can begin to build the actual 3D representation. The choice of representation dictates the nature and quality of the final model:</p>
 
 <ul>
-    <li><strong>Point Clouds:</strong> By taking the depth value of a pixel and projecting it into 3D space using its corresponding camera pose, we can create a point cloud. This is the most direct output of the initial reconstruction steps—a raw, foundational skeleton of the scene. While useful for understanding the basic geometry, this representation is shallow because it consists only of disconnected points and lacks surfaces for realistic rendering.</li>
+    <li><strong>Point Clouds:</strong> By taking the depth value of a pixel and projecting it into 3D space using its corresponding camera pose, we can create a point cloud. This is the most direct output of the initial reconstruction steps - a raw, foundational skeleton of the scene. While useful for understanding the basic geometry, this representation is shallow because it consists only of disconnected points and lacks surfaces for realistic rendering.</li>
     
+    <div class="image-row">
+        <div class="image-container">
+            <img src="3d_point_cloud.png" width="500"/>
+            <div class="image-caption">A 3D point cloud reconstructed from multiple images of a turtle</div>
+        </div>
+    </div>
+
     <li><strong>Explicit Meshes:</strong> To create a more solid and tangible model, we can process a point cloud to generate an explicit mesh. Algorithms connect the individual 3D points to form a continuous surface of polygons (usually triangles). This gives us a watertight model that can be properly textured and lit, making it ideal for applications like games or simulations.</li>
     
+    <div class="image-row">
+        <div class="image-container">
+            <img src="3d_mesh_refiningpng.png" width="300"/>
+            <div class="image-caption">3D mesh-triangles with different resolution<br>(Image source: <a href="https://cathyatseneca.gitbooks.io/3d-modelling-for-programmers/content/3ds_max_basics/3d_representation.html" target="_blank">3D Modelling for Programmers</a>)</div>
+        </div>
+    </div>
+
     <li><strong>Implicit Representations (NeRFs):</strong> A more modern approach bypasses creating an explicit mesh altogether. A Neural Radiance Field (NeRF) is a neural network that acts as an implicit representation. It learns a continuous function directly from the images and their camera poses. By feeding the network a 3D coordinate and a viewing direction, it outputs the color and density at that point. This allows for the rendering of incredibly photorealistic novel views by effectively learning both the geometry (like depth) and appearance (color and light interaction) of the entire scene at once.</li>
+    <div class="image-row">
+        <div class="image-container">
+            <img src="nerf.png" width="700"/>
+            <div class="image-caption">NeRF pipeline: rays are sampled through a scene and processed by a neural network.<br>(Image source: <a href="https://www.blakegella.com/posts/Computer-Vision-001-Neural-Radiance-Fields/" target="_blank">blakegella.com</a>)</div>
+        </div>
+    </div>
     
-    <li><strong>Hybrid Representations (3D Gaussian Splatting):</strong> Occupying a powerful middle ground, 3D Gaussian Splatting has recently emerged. This technique takes the initial point cloud (generated from SfM) and converts each point into a 3D Gaussian—a soft, colored, transparent blob. These Gaussians are an explicit representation that can be "splatted" or projected onto a 2D plane with extreme efficiency. This hybrid approach achieves the photorealism of NeRFs but with the significant advantage of real-time rendering speeds, marking a major leap forward for the field.</li>
+    <li><strong>Hybrid Representations (3D Gaussian Splatting):</strong> Occupying a powerful middle ground, 3D Gaussian Splatting has recently emerged. This technique takes the initial point cloud (generated from SfM) and converts each point into a 3D Gaussian - a soft, colored, transparent blob. These Gaussians are an explicit representation that can be "splatted" or projected onto a 2D plane with extreme efficiency. This hybrid approach achieves the photorealism of NeRFs but with the significant advantage of real-time rendering speeds, marking a major leap forward for the field.</li>
+    <div class="image-row">
+        <div class="image-container">
+            <img src="3dgs.png" width="350"/>
+            <div class="image-caption">3D Gaussian Splatting: 3D Gaussians are projected into image for rendering.<br>(Image source: <a href="https://arxiv.org/pdf/2401.03890" target="_blank">A Survey on 3D Gaussian Splatting</a>)</div>
+        </div>
+    </div>
+
 </ul>
 
 <h2 id="3d-point-clouds-with-colmap">3D Point Clouds with COLMAP</h2>
