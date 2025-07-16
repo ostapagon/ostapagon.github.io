@@ -365,9 +365,7 @@
                 </li>
                     <a href="#3d-point-clouds-with-colmap" aria-label="3D Point Clouds with COLMAP">3D Point Clouds with COLMAP</a></li>
                 <li>
-                    <a href="#dust3r" aria-label="DUST3R">DUST3R</a></li>
-                <li>
-                    <a href="#mast3r-sfm" aria-label="MASt3R-SFM">MASt3R-SFM</a></li>                
+                    <a href="#modern-alternatives-dust3r-and-mast3r" aria-label="Modern Alternatives: DUST3R and MASt3R">Modern Alternatives: DUST3R and MASt3R-SFM</a></li>                
                 <li>
                     <a href="#nerfs-neural-radiance-fields" aria-label="NeRFs: Neural Radiance Fields">NeRFs: Neural Radiance Fields</a></li>
                 <li>
@@ -489,9 +487,106 @@
 
 <h2 id="3d-point-clouds-with-colmap">3D Point Clouds with COLMAP</h2>
 
-<h2 id="dust3r">DUST3R</h2>
+<p>Now that we understand the reconstruction challenge, let's see how COLMAP actually solves it. Think of COLMAP as a geometric detective - it examines a collection of photos and figures out both where each camera was positioned and the 3D structure of the scene.</p>
 
-<h2 id="mast3r-sfm">MASt3R-SFM</h2>
+<h3>The Three-Stage Process</h3>
+
+<p><strong>Feature Detection:</strong> COLMAP scans each image for distinctive visual landmarks - corners, edges, and unique patterns that can be recognized from different angles. Using SIFT features, it creates mathematical "fingerprints" for thousands of points per image.</p>
+
+<p><strong>Feature Matching:</strong> Like a matchmaker, COLMAP compares these fingerprints across all image pairs. Here's where the computational reality hits - with $N$ images, COLMAP must perform $N \times (N-1)/2$ pairwise comparisons. For a modest 100-image dataset, that's 4,950 image pairs to analyze. For matching process COLMAP uses SIFT(Scale-Invariant Feature Transform) features. Each comparison involves matching potentially thousands of features, making this stage scale quadratically with the number of input images.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="sift_matching.png" width="450"/>
+        <div class="image-caption">SIFT feature matching between two views of the same scene<br>(Image source: <a href="https://www.slideserve.com/sharonmoore/the-sift-scale-invariant-feature-transform-detector-and-descriptor-powerpoint-ppt-presentation" target="_blank">SIFT</a>)</div>
+    </div>
+</div>
+
+<p><strong>Bundle Adjustment:</strong> The magic happens here, but it's computationally expensive magic. COLMAP simultaneously estimates camera poses and triangulates 3D point positions through global optimization. This involves solving large sparse systems with thousands of variables, often taking hours for complex scenes.</p>
+
+<h3>The Computational Cost</h3>
+
+<p>The quadratic complexity means processing time explodes with dataset size. A 50-image sequence might take 30 minutes, while 200 images could require 8+ hours on the same hardware. The feature matching stage alone can consume 70-80% of the total runtime, as COLMAP exhaustively searches for correspondences across all image pairs.</p>
+
+<h3>The Result: A Sparse Foundation</h3>
+
+<p>What emerges after this lengthy process is a sparse but highly accurate 3D point cloud - a constellation of reliable points that multiple cameras agree upon. Each point represents a location verified through geometric constraints across multiple views.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="colmap_input.png" width="350" height="250" style="object-fit: cover;"/>
+        <div class="image-caption">Input: Multi-view images</div>
+    </div>
+    <div class="image-container">
+        <img src="colmap_output.gif" width="350" height="250" style="object-fit: cover; cursor: pointer;" onclick="this.src=this.src;" title="Click to replay animation"/>
+        <div class="image-caption">Output: Sparse point cloud with camera poses</div>
+    </div>
+</div>
+<div style="text-align: center; font-style: italic; color: #666; font-size: 16px; margin-top: 10px;">
+    COLMAP workflow: from input images to sparse 3D reconstruction<br>
+    (Image source: <a href="https://peterfalkingham.com/2017/04/04/photogrammetry-testing-8-colmap/" target="_blank">Peter Falkingham</a>)
+</div>
+
+
+
+<p>This sparse output serves as the geometric backbone for all advanced techniques. Every modern 3D reconstruction method - from NeRFs to Gaussian Splatting - builds upon the camera poses and sparse geometry that COLMAP provides.</p>
+
+<p>COLMAP's reliability comes at a computational cost, driving researchers to seek faster alternatives - which is exactly what we'll explore next with DUST3R.</p>
+
+<h2 id="modern-alternatives-dust3r-and-mast3r">Modern Alternatives: DUST3R and MASt3R-SFM</h2>
+
+<p>What if we could skip the entire classical SfM pipeline altogether? Instead of detecting keypoints, matching them, and triangulating - what if a neural network could directly predict 3D structure from raw pixels?</p>
+
+<h3>DUST3R: Direct 3D Prediction</h3>
+
+<p>DUST3R takes a radically different approach. Given two images, it directly regresses dense "pointmaps" - essentially a 3D coordinate for every pixel. The core insight is elegant: rather than building complex pipelines to infer 3D structure, train a transformer to predict it directly.</p>
+
+<p>The network architecture follows a Siamese design where both images are encoded through shared ViT encoders, then processed by twin decoders that output pointmaps expressed in the first camera's coordinate frame. This shared coordinate system is crucial - it means the 3D points from both views are already aligned, eliminating the need for complex pose estimation procedures.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="dust3r_pipeline.png" width="700"/>
+        <div class="image-caption">DUST3R pipeline: Direct pointmap prediction from image pairs<br>(Image source: <a href="https://arxiv.org/abs/2312.14132" target="_blank">DUSt3R</a>)</div>
+    </div>
+</div>
+
+<p>The magic happens in training: DUST3R learns geometric priors from massive datasets, developing an intuitive understanding of 3D structure that often surpasses handcrafted algorithms. It handles challenging cases where classical methods fail: minimal overlap between views, textureless regions, or insufficient camera motion.</p>
+
+<p>But here's the catch - DUST3R processes image pairs. For N images, you need N² forward passes. With a typical transformer requiring substantial memory, this becomes prohibitive beyond ~50 images. The method trades classical complexity for neural complexity, but the quadratic scaling remains.</p>
+
+<h3>MASt3R-SfM: Making Neural SfM Scale</h3>
+
+<p>MASt3R-SfM tackles DUST3R's scalability head-on with two key innovations.</p>
+
+<p><strong>Richer representations:</strong> Instead of just predicting 3D coordinates, MASt3R outputs dense feature descriptors for each pixel patch. These learned features capture local geometric and appearance information, enabling robust matching between pointmaps even when 3D coordinates alone might be ambiguous.</p>
+
+<p><strong>Graph-based processing:</strong> Rather than exhaustively processing all pairs, MASt3R-SfM builds a sparse scene graph. The frozen MASt3R encoder - originally designed for 3D prediction - turns out to be an excellent image retriever. Using ASMK aggregation on encoder features, it identifies likely overlapping pairs with minimal computational overhead.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="mast3r_sfm_pipeline.png" width="700"/>
+        <div class="image-caption">MASt3R-SFM pipeline: encoding, graph-based processing, decoding and two-stage optimization<br>(Image source: <a href="https://arxiv.org/pdf/2409.19152"
+             target="_blank">MAStR-SFM</a>)</div>
+    </div>
+</div>
+
+<p>The resulting graph contains only O(N) edges instead of O(N²). A typical approach connects images to k=10 nearest neighbors plus a sparse set of "keyframe" images, creating a connected graph with linear complexity.</p>
+
+<p>Two-stage optimization then aligns these local reconstructions globally. First, pointmaps are rigidly aligned in 3D space using the learned correspondences. Then a refinement stage minimizes 2D reprojection errors, similar to bundle adjustment but operating on the neural predictions rather than classical triangulated points.</p>
+
+<h3>Why This Matters</h3>
+
+<p>The complexity difference is dramatic:</p>
+
+<ul>
+    <li><strong>COLMAP:</strong> O(N²) feature matching with expensive RANSAC iterations</li>
+    <li><strong>DUST3R:</strong> O(N²) transformer forward passes, memory-bound</li>
+    <li><strong>MASt3R-SfM:</strong> O(N) forward passes + O(N²) retrieval (but retrieval is fast)</li>
+</ul>
+
+<p>In practice, MASt3R-SfM handles 200+ images where DUST3R runs out of memory at 50. The neural approach also shows remarkable consistency - while classical methods degrade significantly with fewer views or challenging motion, MASt3R-SfM maintains steady performance from 3 to 100+ images.</p>
+
+<p>MASt3R-SfM works on truly unconstrained image collections. No assumptions about camera motion patterns, no requirements for high overlap, no manual parameter tuning. You feed it photos, it gives you cameras and 3D structure.</p>
 
 <h2 id="nerfs-neural-radiance-fields">NeRFs: Neural Radiance Fields</h2>
 
