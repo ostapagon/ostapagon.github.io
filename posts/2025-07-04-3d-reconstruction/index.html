@@ -590,10 +590,10 @@
 
 <div class="image-row">
     <div class="image-container">
-        <img src="mast3r_panther_out.png" width="400" height="300" style="object-fit: cover;"/>
+        <img src="mast3r_panther_out.png" width="350" height="260" style="object-fit: cover;"/>
     </div>
     <div class="image-container">
-        <img src="mast3r_panther_out.gif" width="400" height="300" style="object-fit: cover;"/>
+        <img src="mast3r_panther_out.gif" width="350" height="260" style="object-fit: cover;"/>
     </div>
 </div>
 <div style="text-align: center; font-style: italic; color: #666; font-size: 16px; margin-top: 10px;">
@@ -617,6 +617,15 @@
 <h3>Volume Rendering Process</h3>
 
 <p>Training follows a computationally intensive pattern. For each training image, rays are cast from the camera center through every pixel into the 3D scene. Along each ray, multiple 3D points are sampled and queried through the neural network.</p>
+<div class="image-row" style="margin-top: 20px; margin-bottom: 10px;">
+    <div class="image-container" style="text-align: center;">
+        <img src="sampling_nerf.png" alt="NeRF volume sampling illustration" width="700" style="max-width: 100%; object-fit: contain;"/>
+        <div style="font-size: 15px; color: #666; margin-top: 6px;">
+            Example of how the volume is sampled along rays and the neural network is trained.<br>
+            Image source: <a href="https://ar5iv.labs.arxiv.org/html/2111.11426" target="_blank">Neural Fields</a>
+        </div>
+    </div>
+</div>
 
 <p>The key insight is volume rendering. Instead of finding surface intersections, NeRF accumulates color and opacity along the entire ray. Points with high density contribute more to the final pixel color, while transparent regions allow deeper points to show through. This differentiable process enables backpropagation of pixel-level losses directly to the network weights.</p>
 
@@ -624,7 +633,7 @@
 
 <p>NeRFs deliberately overfit to their training data. The network must memorize how light behaves in this specific environment, learning not just the geometry we reconstructed, but also complex material interactions, shadows, and volumetric effects.</p>
 
-<p>This process requires thousands of training iterations, typically taking 6-12 hours on modern GPUs for a single scene. The network encodes every lighting condition, surface detail, and shadow captured in the training images.</p>
+<p>This process requires thousands of training iterations, typically taking <strong>6–12 hours</strong> on modern GPUs for a single scene. The network encodes every lighting condition, surface detail, and shadow captured in the training images.</p>
 
 <h3>The Payoff: Photorealistic Novel Views</h3>
 
@@ -633,6 +642,90 @@
 <p>Modern implementations like Instant-NGP have reduced training time from hours to minutes, but the fundamental trade-off remains. Creating a neural representation that can synthesize photorealistic novel views requires substantial computation to overfit the network to your specific scene.</p>
 
 <h2 id="3d-gaussian-splatting">3D Gaussian Splatting</h2>
+
+<p>We've seen how NeRFs achieve photorealistic novel views by learning continuous radiance fields. However, NeRFs have a critical limitation: rendering speed. Even optimized versions require seconds per image, making them unsuitable for interactive applications like gaming or AR.</p>
+
+<p>3D Gaussian Splatting (3DGS) bridges this gap by representing scenes as collections of 3D Gaussian primitives instead of neural networks. This approach maintains NeRF-quality visuals while achieving real-time rendering speeds.</p>
+
+<h3>The Gaussian Representation</h3>
+
+<p>Instead of querying a neural network along camera rays, 3DGS represents the scene using millions of 3D Gaussians—colored, semi-transparent ellipses positioned throughout space. Think of it as replacing NeRF's smooth function with a pointillist painting made of 3D brushstrokes.</p>
+
+<p>Each 3D Gaussian Splat stores:</p>
+
+<ul>
+    <li><strong>Center Position $\mu \in \mathbb{R}^3$:</strong> Specifies the central location of the Gaussian in the 3D space.</li>
+    <li><strong>Color Representation:</strong> Utilizes spherical harmonics (SH) coefficients $c \in \mathbb{R}^k$ to encode the color information, where $k$ represents the degrees of freedom in the color model.</li>
+    <li><strong>Rotation Factor $r \in \mathbb{R}^4$:</strong> Defined in quaternion terms to manage the orientation of the Gaussian.</li>
+    <li><strong>Scale Factor $s \in \mathbb{R}^3$:</strong> Determines the size of the Gaussian along each axis, forming an ellipsoidal shape.</li>
+    <li><strong>Opacity $\alpha \in \mathbb{R}$:</strong> Controls the transparency.</li>
+</ul>
+
+<div class="image-row" style="margin-top: 20px; margin-bottom: 10px;">
+    <div class="image-container" style="text-align: center;">
+        <img src="3dgs_attributes.png" alt="3DGS Densification" width="700" style="max-width: 100%; object-fit: contain;"/>
+        <div style="font-size: 15px; color: #666; margin-top: 6px;">
+            How 3DGS parameters optimization influence 3D Gaussian Splat.
+        </div>
+    </div>
+</div>
+
+<p>When rendering, these 3D Gaussians project onto the image plane and blend together using alpha compositing—a process that's highly parallelizable on modern GPUs.</p>
+
+<h3>Training: Sculpting with Mathematics</h3>
+
+<p>Like NeRFs, 3DGS requires camera poses and benefits enormously from sparse point clouds (from COLMAP or MASt3R-SfM). Each sparse point becomes an initial Gaussian that optimization then refines.</p>
+
+<p>The training objective minimizes reconstruction error:</p>
+
+<p>$$L = (1 - \lambda)L_1 + \lambda L_{D-SSIM}$$</p>
+
+<p>The real innovation is <strong>adaptive density control</strong>. During optimization, the system continuously monitors reconstruction quality and automatically adjusts the representation:</p>
+
+<ul>
+    <li><strong>Densification:</strong> In under-reconstructed regions, large Gaussians split into smaller ones (like cell division), while new Gaussians clone in sparse areas.</li>
+    <div class="image-row" style="margin-top: 20px; margin-bottom: 10px;">
+        <div class="image-container" style="text-align: center;">
+            <img src="3dgs_density_control.png" alt="3DGS Densification" width="400" style="max-width: 100%; object-fit: contain;"/>
+            <div style="font-size: 15px; color: #666; margin-top: 6px;">
+                Two densification strategies for 3DGS for over and under - reconstructed regions.<br>
+                Image source: <a href="https://arxiv.org/pdf/2308.04079" target="_blank">3DGS Densification</a>
+            </div>
+        </div>
+    </div>
+    <li><strong>Pruning:</strong> Gaussians with low opacity or minimal contribution get removed.</li>
+</ul>
+
+
+
+<p>This creates organic sculpting where complexity adapts to scene requirements. Detailed areas like foliage develop dense clusters of small Gaussians, while smooth surfaces use fewer, larger ones.</p>
+
+<h3>Performance Revolution</h3>
+
+<p>The performance difference is dramatic. 3DGS trains in <strong>15-30 minutes</strong> compared to NeRF's <strong>6-12 hours</strong> a 10-20x speedup. This comes from the explicit representation requiring no expensive neural network evaluations during optimization.</p>
+
+<p>Rendering performance is even more impressive: <strong>30-60+ FPS</strong> at high resolutions. The rasterization process (project, sort by depth, alpha blend) maps perfectly to graphics hardware, unlike NeRF's complex ray marching.</p>
+
+<h3>Beyond Rendering: Analysis and Editing</h3>
+
+<p>The explicit nature unlocks capabilities impossible with NeRFs. Since scenes consist of discrete Gaussians with interpretable parameters, you can:</p>
+
+<ul>
+    <li>Analyze structure by examining Gaussian distributions</li>
+    <li>Edit scenes by moving, removing, or modifying individual Gaussians</li>
+    <li>Extract semantics by clustering Gaussians with similar properties</li>
+    <li>Compress by pruning redundant elements</li>
+</ul>
+
+<p>Researchers have demonstrated removing objects, changing materials, and animating static scenes—all by manipulating the underlying Gaussian representation.</p>
+
+<h3>Technical Considerations</h3>
+
+<p>3DGS initialization strongly depends on sparse point cloud quality. Poor initial geometry leads to longer training and potential artifacts, especially for camera positions far from training views.</p>
+
+<p>Memory scales with scene complexity, typical outdoor scenes require 1-5 million Gaussians. However, this explicit storage often proves more efficient than the large neural networks needed for comparable NeRF quality.</p>
+
+<p>The method can struggle with complex optical effects. Highly reflective surfaces or intricate volumetric phenomena may not be perfectly captured by discrete Gaussians, though visual quality typically remains high for practical scenes.</p>
 
 <h2 id="from-theory-to-practice">From Theory to Practice</h2>
 
