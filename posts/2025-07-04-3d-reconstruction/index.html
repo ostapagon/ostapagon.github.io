@@ -348,7 +348,7 @@
     <h1 class="post-title">
         3D Reconstruction: From Hours to Minutes
 
-    <div class="post-meta">Date: Jul 04, 2025  |  Estimated Reading Time: min  |  Author: Ostap Hembara
+    <div class="post-meta">Date: Jul 04, 2025  |  Estimated Reading Time: 30 min  |  Author: Ostap Hembara
 
 </div>
   </header> <div class="toc">
@@ -382,6 +382,8 @@
 <h2 id="rendering-3d-scene">Rendering a 3D Scene</h2>
 
 <p>At its core, computer graphics is about creating two-dimensional images from three-dimensional virtual worlds. This process, known as rendering, is a fascinating blend of geometry, linear algebra, and physics simulation. Let's break down how we go from an abstract 3D object to a final, viewable image.</p>
+
+<a href="https://huggingface.co/spaces/ostapient/mast3r-3dgs" target="_blank" style="text-decoration: none;"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue" alt="hugging face spaces badge" style="display: inline; margin: 0 2px;"></a> <a href="https://github.com/nerlfield/wild-gaussian-splatting" target="_blank" style="text-decoration: none;"><img src="https://img.shields.io/badge/GitHub-Repository-black?logo=github" alt="github repository badge" style="display: inline; margin: 0 2px;"></a></p>
 
 <h3>The Building Blocks: 3D Objects as Meshes</h3>
 
@@ -729,10 +731,91 @@
 
 <h2 id="from-theory-to-practice">From Theory to Practice</h2>
 
+<p>Two tools let you experiment with the complete reconstruction pipeline: a web demo and a local installation.</p>
+
+<h3>Hugging Face Demo</h3>
+
+<p><a href="https://huggingface.co/spaces/ostapient/mast3r-3dgs" target="_blank"><img src="https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue" alt="hugging face spaces badge"></a></p>
+
+<p>This space runs the full pipeline from images to 3D models in two steps.</p>
+
+<p>Upload overlapping images of any scene rooms, objects, or outdoor areas. The first tab processes these through MASt3R:</p>
+
+<ul>
+    <li>Neural feature extraction and matching</li>
+    <li>Graph-based scene reconstruction</li>
+    <li>Dense pointmap generation</li>
+    <li>Camera pose estimation</li>
+</ul>
+
+<p>Within minutes, you get sparse point clouds and camera parameters. Switch to the "3DGS" tab to train a Gaussian Splatting model on your reconstructed scene. The training takes 15-30 minutes and produces real-time renderable results you can download.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="turtle_sfm.png" width="350" height="260" style="object-fit: cover;"/>
+        <div class="image-caption">Step 1: MASt3R point cloud reconstruction</div>
+    </div>
+    <div class="image-container">
+        <img src="turtle_3dgs.gif" width="350" height="260" style="object-fit: cover;"/>
+        <div class="image-caption">Step 2: 3DGS optimization result</div>
+    </div>
+</div>
+
+<h3>Speed Revolution: Minutes to 3D</h3>
+
+<p>The combination of MASt3R and 3DGS represents a speed breakthrough in 3D reconstruction. For small datasets (up to 10 images), you can go from raw photos to a fully interactive 3D model in under 10 minutes total.</p>
+
+<p>This dramatic speedup comes from two innovations working together. MASt3R's neural approach skips the expensive feature matching that makes classical methods slow, while 3DGS training converges quickly thanks to the high-quality initialization from MASt3R's dense pointmaps.</p>
+
+<p>Compare this to traditional workflows: COLMAP alone could take hours on the same dataset, and NeRF training would require additional hours even with perfect camera poses. The MASt3R + 3DGS combination achieves comparable visual quality in a fraction of the time.</p>
+
+<p>For larger datasets, processing scales gracefully—20-30 images typically complete in 20-30 minutes, while datasets of 50+ images finish within an hour. This makes iterative experimentation practical, where you can quickly test different capture strategies or scene compositions.</p>
+
+<h3>Local Installation</h3>
+
+<p><a href="https://github.com/nerlfield/wild-gaussian-splatting" target="_blank"><img src="https://img.shields.io/badge/GitHub-Repository-black?logo=github" alt="github repository badge"></a></p>
+
+<p>This repository provides the complete pipeline for local experimentation.</p>
+
+<p>Installation follows standard practices:</p>
+
+<pre><code class="language-bash">git clone https://github.com/nerlfield/wild-gaussian-splatting
+cd wild-gaussian-splatting
+conda env create -f environment.yml</code></pre>
+
+<p>The repository supports multiple reconstruction methods:</p>
+
+<ul>
+    <li><strong>DUSt3R:</strong> Neural reconstruction for smaller datasets or memory-constrained scenarios.</li>
+    <li><strong>MASt3R:</strong> Fast neural reconstruction that scales to larger image collections.</li>
+</ul>
+
+<p>Both methods output camera poses and point clouds converted to COLMAP format, ensuring compatibility with the broader 3D reconstruction ecosystem. This standardized output are fed into the 3DGS training pipeline, for direct comparison of reconstruction quality and training time across approaches.</p>
+
+<p>The conversion to COLMAP format is particularly valuable because it allows integration with any downstream method that expects traditional SfM outputs.</p>
+
 <h2 id="references">References</h2>
 
 <ul>
-    <li>Wikipedia contributors. "Polygon mesh." Wikipedia, The Free Encyclopedia. <a href="https://en.wikipedia.org/wiki/Polygon_mesh" target="_blank">https://en.wikipedia.org/wiki/Polygon_mesh</a> (accessed 2025).</li>
+    <li>Mildenhall, Ben, et al. "NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis." <em>European Conference on Computer Vision (ECCV)</em>, 2020. <a href="https://arxiv.org/abs/2003.08934" target="_blank">https://arxiv.org/abs/2003.08934</a></li>
+    
+    <li>Kerbl, Bernhard, et al. "3D Gaussian Splatting for Real-Time Radiance Field Rendering." <em>ACM Transactions on Graphics (SIGGRAPH)</em>, 2023. <a href="https://arxiv.org/abs/2308.04079" target="_blank">https://arxiv.org/abs/2308.04079</a></li>
+    
+    <li>Schönberger, Johannes L., and Jan-Michael Frahm. "Structure-from-Motion Revisited." <em>IEEE Conference on Computer Vision and Pattern Recognition (CVPR)</em>, 2016. <a href="https://arxiv.org/abs/1604.07379" target="_blank">https://arxiv.org/abs/1604.07379</a></li>
+    
+    <li>Wang, Shuzhe, et al. "DUSt3R: Geometric 3D Vision Made Easy." <em>arXiv preprint</em>, 2023. <a href="https://arxiv.org/abs/2312.14132" target="_blank">https://arxiv.org/abs/2312.14132</a></li>
+    
+    <li>Leroy, Vincent, et al. "MASt3R: Matching Anything for Stereoscopic Reconstruction." <em>arXiv preprint</em>, 2024. <a href="https://arxiv.org/abs/2409.19152" target="_blank">https://arxiv.org/abs/2409.19152</a></li>
+    
+    <li>Müller, Thomas, et al. "Instant Neural Graphics Primitives with a Multiresolution Hash Encoding." <em>ACM Transactions on Graphics (SIGGRAPH)</em>, 2022. <a href="https://arxiv.org/abs/2201.05989" target="_blank">https://arxiv.org/abs/2201.05989</a></li>
+    
+    <li>Lowe, David G. "Distinctive Image Features from Scale-Invariant Keypoints." <em>International Journal of Computer Vision</em>, 2004. <a href="https://www.cs.ubc.ca/~lowe/papers/ijcv04.pdf" target="_blank">Paper PDF</a></li>
+    
+    <li>Triggs, Bill, et al. "Bundle Adjustment — A Modern Synthesis." <em>Vision Algorithms: Theory and Practice</em>, Springer, 2000. <a href="https://hal.inria.fr/inria-00548290/document" target="_blank">Paper PDF</a></li>
+    
+    <li>Pharr, Matt, Wenzel Jakob, and Greg Humphreys. "Physically Based Rendering: From Theory to Implementation." <em>Third Edition</em>, Morgan Kaufmann, 2016. <a href="https://www.pbr-book.org/" target="_blank">https://www.pbr-book.org/</a></li>
+    
+    <li>Scratchapixel Team. "Computer Graphics from Scratch." <em>Online Resource</em>. <a href="https://www.scratchapixel.com/" target="_blank">https://www.scratchapixel.com/</a></li>
 </ul>
 
 </div>
@@ -751,7 +834,7 @@
         </div>
     </div>
     <div class="footer-bottom">
-        <p>&copy; 2024 ostapagon. All rights reserved.</p>
+        <p>&copy; 2025 ostapagon. All rights reserved.</p>
     </div>
 </footer>
 

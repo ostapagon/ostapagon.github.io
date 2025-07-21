@@ -6,14 +6,14 @@
     <description>Recent content on ostapagon blog</description>
     <generator>Hugo -- gohugo.io</generator>
     <language>en-us</language>
-    <lastBuildDate>Thu, 31 October 2024 00:00:00 +0000</lastBuildDate><atom:link href="https://ostapagon.github.io/index.xml" rel="self" type="application/rss+xml" />
+    <lastBuildDate>Fri, 04 July 2025 00:00:00 +0000</lastBuildDate><atom:link href="https://ostapagon.github.io/index.xml" rel="self" type="application/rss+xml" />
     <item>
       <title>3D Reconstruction: From Hours to Minutes</title>
       <link>https://ostapagon.github.io/posts/2025-07-04-3d-reconstruction/</link>
-      <pubDate>Thu, 31 October 2024 00:00:00 +0000</pubDate>
+      <pubDate>Fri, 04 July 2025 00:00:00 +0000</pubDate>
       
       <guid>https://ostapagon.github.io/posts/2025-07-04-3d-reconstruction/</guid>
-      <description></description>
+      <description>Explore the complete pipeline from images to interactive 3D models using modern neural approaches. This post covers everything from classical Structure from Motion (COLMAP) to cutting-edge methods like MASt3R-SfM and 3D Gaussian Splatting. Learn how recent advances have reduced reconstruction time from hours to minutes while maintaining photorealistic quality.</description>
     </item>
 
     <item>
@@ -22,7 +22,7 @@
       <pubDate>Thu, 31 October 2024 00:00:00 +0000</pubDate>
       
       <guid>https://ostapagon.github.io/posts/2024-10-31-sh-lighting/</guid>
-      <description></description>
+      <description>This post explores a practical method for using spherical harmonics in scene illumination. Instead of directly calculating light from spherical harmonics, we'll convert them into a 2D UV environment map for efficient sampling. This approach transforms spherical harmonics into 2D image that can be easily understood, analyzed and regularized.</description>
     </item>
     
   </channel>
