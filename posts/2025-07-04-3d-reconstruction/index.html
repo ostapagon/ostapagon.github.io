@@ -604,9 +604,15 @@
 
 <h2 id="nerfs-neural-radiance-fields">NeRFs: Neural Radiance Fields</h2>
 
-<p>We've extracted sparse point clouds and camera poses from our image collections. Whether using COLMAP's methodical geometric analysis or MASt3R-SfM's neural predictions, we end up with the same foundation: a constellation of reliable 3D points and precisely calibrated camera positions.</p>
+<h3>From Discrete Points to Continuous Fields</h3>
 
-<p>Those sparse points are just the skeleton. Between each reconstructed point lies vast empty space, and our original training images contain rich photographic detail that no point cloud can capture. Neural Radiance Fields (NeRFs) fill this gap.</p>
+<p>We've successfully extracted camera poses and 3D structure from our image collections. Whether using COLMAP's methodical geometric analysis or MASt3R-SfM's neural predictions, we end up with the same foundation: a constellation of reliable 3D points and precisely calibrated camera positions.</p>
+
+<p>But here's the fundamental limitation we now face - our 3D representation is still fundamentally <strong>discrete and sparse</strong>. Those reconstructed points are just the skeleton of our scene. Between each point lies vast empty space, and our original training images contain rich photometric information that no point cloud can capture: subtle color variations, complex material interactions, view-dependent lighting effects, and fine geometric details that exist in the <strong>continuous space</strong> between our samples.</p>
+
+<p>This is where we make a conceptual leap from <strong>discrete geometry</strong> to <strong>continuous representation</strong>.</p>
+
+<p>Neural Radiance Fields (NeRFs) transform our sparse geometric foundation into something entirely different - a learned, continuous function that describes every possible location in 3D space. Instead of asking "<strong>where are the points?</strong>", NeRFs answer "<strong>what exists here?</strong>" for any coordinate you can imagine, even in the seemingly empty regions between our reconstructed points.</p>
 
 <h3>The NeRF Architecture</h3>
 
@@ -710,7 +716,7 @@
 
 <h3>Beyond Rendering: Analysis and Editing</h3>
 
-<p>The explicit nature unlocks capabilities impossible with NeRFs. Since scenes consist of discrete Gaussians with interpretable parameters, you can:</p>
+<p>The explicit nature of 3D Gaussians unlocks capabilities impossible with NeRFs. Since scenes consist of discrete Gaussians with interpretable parameters, you can:</p>
 
 <ul>
     <li>Analyze structure by examining Gaussian distributions</li>
