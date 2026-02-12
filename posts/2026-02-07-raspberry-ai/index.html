@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en" dir="auto">
+
+<head><meta charset="utf-8">
+<meta http-equiv="X-UA-Compatible" content="IE=edge">
+<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+<meta name="robots" content="index, follow">
+<title>Raspberry AI: Agent That Won't Ghost You for 200$ | ostapagon's Blog</title>
+<meta name="keywords" content="raspberry-pi, AI, agent, hardware, automation" />
+<meta name="description" content="I have built AI personal assistant for 200$ and it took over my life">
+<meta name="author" content="Ostap Hembara">
+<link rel="canonical" href="https://ostapagon.github.io/posts/2026-02-07-raspberry-ai/" />
+<link crossorigin="anonymous" href="/assets/css/stylesheet.min.51b2420ff5ea1215cdf584af7ba59d5fea94201c33f25109d6448c7271631316.css" integrity="sha256-UbJCD/XqEhXN9YSve6WdX&#43;qUIBwz8lEJ1kSMcnFjExY=" rel="preload stylesheet" as="style">
+<link rel="stylesheet" href="/assets/css/custom.css">
+<script defer crossorigin="anonymous" src="/assets/js/highlight.min.2eadbb982468c11a433a3e291f01326f2ba43f065e256bf792dbd79640a92316.js" integrity="sha256-Lq27mCRowRpDOj4pHwEybyukPwZeJWv3ktvXlkCpIxY="
+    onload="hljs.initHighlightingOnLoad();" onerror="loadHighlightJSFallback();"></script>
+<link rel="icon" href="https://ostapagon.github.io/favicon.ico">
+<link rel="icon" type="image/png" sizes="16x16" href="https://ostapagon.github.io/favicon-16x16.png">
+<link rel="icon" type="image/png" sizes="32x32" href="https://ostapagon.github.io/favicon-32x32.png">
+<link rel="apple-touch-icon" href="https://ostapagon.github.io/apple-touch-icon.png">
+<link rel="mask-icon" href="https://ostapagon.github.io/safari-pinned-tab.svg">
+<meta name="theme-color" content="#2e2e33">
+<meta name="msapplication-TileColor" content="#2e2e33">
+<link rel="alternate" hreflang="en" href="https://ostapagon.github.io/posts/2026-02-07-raspberry-ai/" />
+<noscript>
+    <style>
+        #theme-toggle,
+        .top-link {
+            display: none;
+        }
+
+    </style>
+    <style>
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --theme: rgb(29, 30, 32);
+                --entry: rgb(46, 46, 51);
+                --primary: rgb(218, 218, 219);
+                --secondary: rgb(155, 156, 157);
+                --tertiary: rgb(65, 66, 68);
+                --content: rgb(196, 196, 197);
+                --hljs-bg: rgb(46, 46, 51);
+                --code-bg: rgb(55, 56, 62);
+                --border: rgb(51, 51, 51);
+            }
+
+            .list {
+                background: var(--theme);
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-track {
+                background: 0 0;
+            }
+
+            .list:not(.dark)::-webkit-scrollbar-thumb {
+                border-color: var(--theme);
+            }
+        }
+
+    </style>
+</noscript>
+
+<script>
+  MathJax = {
+    tex: {
+      inlineMath: [['$', '$'], ['\\(', '\\)']],
+      displayMath: [['$$','$$'], ['\\[', '\\]']],
+      processEscapes: true,
+      processEnvironments: true
+    },
+    options: {
+      skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+  };
+
+  window.addEventListener('load', (event) => {
+      document.querySelectorAll("mjx-container").forEach(function(x){
+        x.parentElement.classList += 'has-jax'})
+    });
+
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+  src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+<style>
+.post-header h1 {
+    font-size: 35px;
+}
+.post pre,
+.post code {
+    background-color: #fcfcfc;
+    font-size: 13px; /* make code smaller for this post... */
+}
+
+/* Enhanced syntax highlighting CSS */
+.post pre code {
+    background-color: transparent !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    line-height: 1.4;
+}
+
+/* Unified syntax highlighting using dark theme palette for both light and dark modes */
+.hljs-keyword { color: #ff7b72 !important; font-weight: bold !important; }
+.hljs-string { color: #a5d6ff !important; }
+.hljs-number { color: #79c0ff !important; }
+.hljs-comment { color: #8b949e !important; font-style: italic !important; }
+.hljs-function { color: #d2a8ff !important; }
+.hljs-class { color: #d2a8ff !important; }
+.hljs-name { color: #d2a8ff !important; }
+.hljs-built_in { color: #79c0ff !important; }
+.hljs-literal { color: #79c0ff !important; }
+.hljs-params { color: #e6edf3 !important; }
+.hljs-attr { color: #ff7b72 !important; }
+.hljs-title { color: #d2a8ff !important; font-weight: bold !important; }
+.image-row {
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    gap: 20px;
+    margin: 20px 0;
+    flex-wrap: nowrap;
+}
+.image-row img {
+    display: block;
+    margin: 0 auto;
+}
+.image-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    flex: 0 0 auto;
+}
+.image-caption {
+    margin-top: 10px;
+    font-style: italic;
+    color: #666;
+    font-size: 16px;
+}
+
+.image-container img[src="diffuse_reflection.jpg"] {
+    margin-left: 20px;
+}
+
+/* Footer links styling - make them display horizontally */
+.footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.footer-links a {
+    text-decoration: none;
+    color: inherit;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.footer-links a:hover {
+    color: #007acc;
+}
+
+
+/* .logo {
+    margin-left: -100px;
+} */
+</style>
+
+</head>
+
+<body class="" id="top">
+    <noscript>
+        <style>
+            #theme-toggle,
+            .top-link {
+                display: none;
+            }
+    
+        </style>
+        <style>
+            @media (prefers-color-scheme: dark) {
+                :root {
+                    --theme: rgb(29, 30, 32);
+                    --entry: rgb(46, 46, 51);
+                    --primary: rgb(218, 218, 219);
+                    --secondary: rgb(155, 156, 157);
+                    --tertiary: rgb(65, 66, 68);
+                    --content: rgb(196, 196, 197);
+                    --hljs-bg: rgb(46, 46, 51);
+                    --code-bg: rgb(55, 56, 62);
+                    --border: rgb(51, 51, 51);
+                }
+    
+                .list {
+                    background: var(--theme);
+                }
+    
+                .list:not(.dark)::-webkit-scrollbar-track {
+                    background: 0 0;
+                }
+    
+                .list:not(.dark)::-webkit-scrollbar-thumb {
+                    border-color: var(--theme);
+                }
+            }
+    
+            /* Social icons styling */
+            .lang-switch {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .lang-switch li {
+                display: flex;
+                align-items: center;
+            }
+            
+            .lang-switch a {
+                display: flex;
+                align-items: center;
+                padding: 4px;
+            }
+            
+            .lang-switch svg {
+                width: 16px;
+                height: 16px;
+            }
+    
+        </style>
+</noscript>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-NRCFMZDRR3"></script>
+        <script>
+        var doNotTrack = false;
+        if ( false ) {
+            var dnt = (navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack);
+            var doNotTrack = (dnt == "1" || dnt == "yes");
+        }
+        if (!doNotTrack) {
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-NRCFMZDRR3');
+        }
+        </script><meta property="og:title" content="ostapagon: Your Blog Title" />
+<meta property="og:description" content="ostapagon: Your blog description" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://ostapagon.github.io/" />
+
+<meta name="twitter:card" content="summary"/>
+<meta name="twitter:title" content="ostapagon: Your Blog Title"/>
+<meta name="twitter:description" content="ostapagon: Your blog description."/>
+
+<script type="application/ld+json">
+{
+    "@context": "https://schema.org",
+    "@type": "Organization",
+    "name": "ostapagon: Your Blog Name",
+    "url": "ostapagon: Your site URL",
+    "description": "ostapagon: Your blog description",
+    "thumbnailUrl": "ostapagon: Your favicon path",
+    "sameAs": [
+        "https://github.com/ostapagon",
+        "https://twitter.com/ostapagone"
+    ]
+}
+</script>
+</head>
+
+<body class="list" id="top">
+<script>
+    if (localStorage.getItem("pref-theme") === "dark") {
+        document.body.classList.add('dark');
+    } else if (localStorage.getItem("pref-theme") === "light") {
+        document.body.classList.remove('dark')
+    } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.body.classList.add('dark');
+    }
+
+</script>
+
+<script>
+    MathJax = {
+    tex: {
+        inlineMath: [['$', '$'], ['\\(', '\\)']],
+        displayMath: [['$$','$$'], ['\\[', '\\]']],
+        processEscapes: true,
+        processEnvironments: true
+    },
+    options: {
+        skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre']
+    }
+    };
+
+    window.addEventListener('load', (event) => {
+        document.querySelectorAll("mjx-container").forEach(function(x){
+        x.parentElement.classList += 'has-jax'})
+    });
+
+</script>
+<script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+<script type="text/javascript" id="MathJax-script" async
+    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+
+<header class="header">
+    <nav class="nav">
+        <div class="logo">
+            <a href="https://ostapagon.github.io/" accesskey="h" title="ostapagon">ostapagon</a>
+            <span class="logo-switches">
+                <button id="theme-toggle" accesskey="t" title="(Alt + T)">
+                    <svg id="yin-yang-icon" class="yin-yang-icon" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 100 100">
+                        <circle cx="50" cy="50" r="48" fill="#fff" stroke="currentColor" stroke-width="4"/>
+                        <path d="M50,2
+                                 a48,48 0 1,1 0,96
+                                 a24,24 0 1,0 0,-48
+                                 a24,24 0 1,1 0,-48z" fill="#000"/>
+                        <circle cx="50" cy="26" r="10" fill="#000"/>
+                        <circle cx="50" cy="74" r="10" fill="#fff"/>
+                    </svg>
+                </button>
+                <ul class="lang-switch"><li>|</li>
+                </ul>
+            </span>
+        </div>
+        <ul id="menu">
+            <li>
+                <a href="https://ostapagon.github.io/" title="Posts">
+                    <span>Posts</span>
+                </a>
+            </li>
+            <li>
+                <a href="https://ostapagon.github.io/search/" title="Search (Alt &#43; /)" accesskey=/>
+                    <span>Search</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+</header>
+<main class="main">
+
+<article class="post-single">
+  <header class="post-header">
+    
+    <h1 class="post-title">
+        Raspberry AI: Agent That Won't Ghost You for 200$
+
+    <div class="post-meta">Date: Feb 07, 2026  |  Estimated Reading Time: 5 min  |  Author: Ostap Hembara
+
+</div>
+  </header> <div class="toc">
+    <details >
+        <summary accesskey="c" title="(Alt + C)">
+            <span class="details">Table of Contents</span>
+        </summary>
+
+        <div class="inner"><ul>
+                <li>
+                    <a href="#what-casper-agent-can-do" aria-label="What Casper Agent can do?">What Casper Agent can do?</a></li>
+                <li>
+                    <a href="#hardware-setup" aria-label="Hardware Setup">Hardware Setup</a>
+                </li>
+                <li>
+                    <a href="#caspers-brain" aria-label="Casper's Brain: Main Components">Casper's Brain: Main Components</a></li>
+            </ul>
+        </div>
+    </details>
+</div>
+
+<div class="post-content">
+
+<p>When I got a Raspberry Pi 5 as a Christmas present, I stared at the box for a while thinking about what to do with it. Instead of letting it gather dust on my shelf, I decided to breathe some life into it and name it after my childhood idol: Casper, the friendly ghost.</p>
+
+<p>I've been learning Chinese, and honestly, the daily Anki routine was getting old - read English, answer in Chinese, repeat. I wanted something more dynamic, more unexpected. That's when it clicked: AI + Anki integration could give me real practice sessions. So I built it.</p>
+
+<p>But once it worked, it felt... limited. A bit stupid, even. So I added Perplexity for research queries. Then calendar management seemed like a natural fit. Then task execution. The real pain point? Constantly tweaking prompts to make Casper correct my Chinese mistakes, keep responses short, remember my preferences - all that stuff. That's when I realized I needed to give it memory.</p>
+
+<p>What started as a simple Chinese practice buddy evolved into a full-fledged personal AI agent. And it cost me about 200$ to build. Here's how I did it.</p>
+
+
+<h2 id="what-casper-agent-can-do">What Casper Agent can do?</h2>
+
+<div class="image-row">
+    <div class="image-container">
+        <video width="700" controls>
+            <source src="IMG_1020.mp4" type="video/mp4">
+            Your browser does not support the video tag.
+        </video>
+        <div class="image-caption">Small demo of Casper in action</div>
+    </div>
+</div>
+
+<p>Here's what daily life with Casper actually looks like.</p>
+
+<h3>Anki Practice Sessions</h3>
+
+<p>In the morning, I just say "Hey Casper, let's do Anki." For those unfamiliar, Anki is spaced repetition software - basically flashcards on steroids. It's my #1 memorization tool for everything from basic AI concepts to Chinese vocabulary. The problem with traditional Anki is you end up memorizing the exact phrasing of your own questions. Ask yourself "What's the Chinese word for apple?" enough times and you're just pattern matching, not actually learning.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="anki.png" width="700"/>
+        <div class="image-caption">Anki flashcard flow</div>
+    </div>
+</div>
+
+<p>Casper fixes this. It asks me about words in different ways, paraphrases questions The small display shows characters and pinyin when I need visual backup, but the interaction stays fresh.</p>
+
+<h3>Research While You Work</h3>
+
+<p>This is where Perplexity integration shines. I can ask Casper to look something up mid-conversation: "Hey, what's the deal with constitutional AI?" It searches, reads me a summary, and here's the cool part - I can tell it to create an Anki card about it right there. Or I'll ask it to research something in the background while I'm coding. "Find me recent papers on inference optimization" - and ten minutes later it has a summary ready.</p>
+
+<h3>Calendar & Tasks</h3>
+
+<p>Plain English commands: "Schedule a tenis practice session for this Friday at 9am" Done. But the real flexibility comes from the Telegram bot and webhooks I set up. Sometimes I'm not near the Pi. So I text Casper: "Add dentist appointment Friday 2pm" or send a voice message: "Remind me to review the deployment docs tomorrow." Commands in text or audio, from anywhere. The to-do list grows, meetings get scheduled, and I don't have to break flow.</p>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="telegram.png" width="240"/>
+        <div class="image-caption">Telegram bot: Text and voice commands to manage tasks and calendar</div>
+    </div>
+</div>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="calenar.png" width="700"/>
+        <div class="image-caption">Google Calendar: Event created via voice message through Telegram</div>
+    </div>
+</div>
+
+<h3>Memory That Learns</h3>
+
+<p>After every conversation, Casper stores a short summary and extracts facts - about me, my preferences, context from what we talked about. Before the agent runs, it grabs related memories and appends them to the prompt. My user profile gets built up over time and fed right into the context.</p>
+
+<p>What this means in practice: Casper knows I want short answers. It remembers my Chinese level. It picked up that I prefer corrections to be gentle but direct. My preferences aren't hardcoded - they're learned and adapted. The prompt gets steered by accumulated context instead of me saying "keep it brief" every damn time.</p>
+
+
+
+
+<h2 id="hardware-setup">Hardware Setup</h2>
+
+<p>The build is straightforward. Here's what you need:</p>
+
+<ul>
+    <li><strong>Raspberry Pi 5</strong> - 4GB RAM, 32GB SD card</li>
+    <li><strong>Display</strong> - Small 128x96 pixels screen (just enough for context)</li>
+    <li><strong>Audio</strong> - Anker PowerConf A3301 (you can go cheaper with any basic speaker + mic combo)</li>
+    <li><strong>Internet</strong> - Stable connection with 8Mbps+ for Gemini Live API and other API calls</li>
+</ul>
+
+<p>You can squeeze everything into 200$+ depending on what you already have and what deals you find.</p>
+
+<h2 id="caspers-brain">Casper's Brain: Main Components</h2>
+
+<div class="image-row">
+    <div class="image-container">
+        <img src="diagram.png" width="700"/>
+        <div class="image-caption">Casper's architecture: Three interfaces sharing one brain</div>
+    </div>
+</div>
+
+<h3>Three Parallel Interfaces</h3>
+
+<p>Casper runs three interfaces simultaneously - voice assistant, Telegram bot, and webhook server. All three share the same Memory Manager instance and MCP Registry. This means learning propagates across interfaces. A preference you mention via Telegram gets injected into the voice assistant's context. A task you schedule through the webhook shows up in all interfaces.</p>
+
+<p>The state manager orchestrates everything using asyncio. Voice runs in the main loop (blocking on wake word detection or active conversation), while Telegram and webhook run as background tasks:</p>
+
+<pre><code>webhook_task = asyncio.create_task(webhook_server.start())
+telegram_task = asyncio.create_task(telegram_bot.start())</code></pre>
+
+<h3>Voice Pipeline: Vosk + Gemini Live</h3>
+
+<p>Voice starts with wake word detection. I'm using Vosk's <code>vosk-model-small-en-us-0.15</code> - a 40MB model that runs on CPU. Audio comes in at 16kHz, processed in 512-frame chunks. The recognizer checks both final and partial results, so detection happens fast (~500ms after you say "Casper").</p>
+
+<p>Once triggered, Gemini Live API takes over. This is the <code>gemini-2.5-flash-native-audio-preview</code> model that handles STT, LLM, and TTS in one unified pipeline. Audio streams bidirectionally over WebSocket. Input is 16kHz PCM, output is 24kHz. First response token hits around 800ms, which is fast enough for natural conversation.</p>
+
+<p>The tricky part: ending sessions. Gemini Live doesn't have a built-in "goodbye" detector. So I added a custom function declaration called <code>session_end</code>. The model learns to call it when the conversation wraps up. When that function fires, I set a flag that breaks the conversation loop and returns to wake word detection.</p>
+
+<h3>Agent API for Text</h3>
+
+<p>Telegram and webhook don't use Live API. They use the standard Gemini 1.5 Flash API (<code>gemini-1.5-flash</code>). Why separate? Live API is optimized for streaming audio with low latency. The text API is more stable for request/response patterns and supports audio file uploads (for Telegram voice messages) without streaming overhead.</p>
+
+<p>Both APIs support function calling. The agent builds a chat session with system instruction, conversation history, and available tool declarations. When the model responds with function calls, I execute them via the Task Executor, send results back, and the model generates the final response.</p>
+
+<p>Sessions auto-reset after 20 messages to prevent context overflow. When that happens, I store a summary in memory and keep the last 4 messages for continuity.</p>
+
+<h3>MCP Registry: The Middleware Layer</h3>
+
+<p>Claude Desktop has native MCP support. Gemini doesn't. But MCP servers are standardized - they use JSON-RPC 2.0 over stdio, they have well-defined schemas, and they're reusable. So I built a middleware layer that bridges the gap.</p>
+
+<p>At startup, the MCP Registry reads <code>mcp_servers.json</code>, spawns each server as a subprocess (stdin/stdout pipes), sends the initialization handshake, and calls <code>tools/list</code> to discover available tools. For each tool, I translate the JSON Schema into Gemini's function declaration format:</p>
+
+<pre><code>types.FunctionDeclaration(
+    name=tool_name,
+    description=tool_def["description"],
+    parameters=types.Schema(
+        type=types.Type.OBJECT,
+        properties={...}  # Converted from JSON Schema
+    )
+)</code></pre>
+
+<p>When Gemini calls a function, the registry routes it to the right MCP server, sends a <code>tools/call</code> request via JSON-RPC, parses the response (usually JSON in a content array), and formats it back for Gemini. The whole translation happens transparently - Gemini just sees function declarations, MCP servers just see JSON-RPC.</p>
+
+<p>Adding a new tool is editing the config file. No code changes. The registry handles discovery and routing automatically.</p>
+
+<h3>Memory System</h3>
+
+<p>Here's how the agent prompt gets structured:</p>
+
+<pre><code>You are Casper, a helpful AI assistant...
+
+// User profile - built and updated over time
+{user_profile}
+- Prefers short, concise answers
+- Learning Chinese (HSK2 level)
+- Wants gentle but direct corrections
+
+// Relative facts - top 5-10 semantically close to current question
+{relevant_facts}
+- Practices Chinese flashcards daily (similarity: 0.89)
+- Plays tennis every Friday at 9am (similarity: 0.76)
+</code></pre>
+
+<p>Memory runs on ChromaDB with local embeddings. Every 10 messages, conversations get stored and facts get extracted. The extraction happens async - I fire off a Gemini API request asking it to pull structured facts from the conversation. Each fact gets a category (habit, preference, learning, information), confidence score, scope, and tags.</p>
+
+<p>Facts get embedded using <code>all-MiniLM-L6-v2</code> from Sentence Transformers. It's a 384-dimensional model that runs on CPU in about 50ms per query. The embeddings go into ChromaDB's facts collection with metadata filtering support.</p>
+
+<p>Before any agent interaction, I do semantic search: generate a query embedding, run cosine similarity search in ChromaDB, filter by distance < 1.6, and grab the top 10 results. These facts get appended to the system instruction. That's how context accumulates without manually repeating preferences.</p>
+
+<p>The same memory instance is shared across all three interfaces. ChromaDB is persistent (stored in <code>data/chroma/</code>), so facts survive restarts. Embeddings happen on the Pi, no API calls needed.</p>
+
+<h3>Background Task Execution</h3>
+
+<p>Webhook and Telegram both go through the Task Executor. When a tool call comes in, the executor checks if it's an MCP tool, a display operation, or a memory operation, then routes accordingly. Everything's async, so I can fire off multiple tool calls in parallel and await results.</p>
+
+<p>Task history is tracked in memory (ring buffer, last 100 tasks) with timestamps and execution times. Useful for debugging and seeing what the agent's been up to.</p>
+
+<h3>Where This Goes Next</h3>
+
+<p>I started this whole thing just to make Anki reviews less boring - add some speaking and listening, make the questions less predictable. But it grew. Now it's a voice assistant that remembers conversations, manages my calendar, creates flashcards on the fly, and answers research questions.</p>
+
+<p>There's a lot of hype around agents lately. Projects like <a href="https://openclaws.io/" target="_blank">OpenClaw</a> are showing what's possible with browser automation through their <code>browser</code> tool - clicking buttons, filling forms, navigating websites, running actual errands. Buying stuff, selling stuff, interacting with web apps on your behalf. I tried using OpenClaw while building Casper, but it was pretty expensive to run. Some questions can trigger tasks that burn through around 50\$ for default operations. In comparison, Casper costs me around 1-3\$ a day with frequent use. Still, some of the concepts are cool. OpenClaw also has a "heartbeat" feature where the agent runs periodic background checks and can proactively reach out when something needs attention - instead of waiting for you to ask.</p>
+
+<p>The middleware setup I built here (MCP Registry) means I could plug in those kinds of tools pretty easily. Add browser search? Just install  Perplexity MCP server via <code>npm install @perplexity-ai/mcp-server</code>, add it to the config and it will be available to Casper</p>
+
+<p>I think we're not far from Jarvis-level assistants. The pieces exist - natural language understanding, function calling, memory systems, multi-modal inputs. It's just a matter of wiring them together and making them reliable enough to actually use daily.</p>
+
+<h2 id="references">References</h2>
+
+<ul>
+    <li>OpenClaw. "Browser Automation Agent." <a href="https://openclaws.io/" target="_blank">https://openclaws.io/</a></li>
+    
+    <li>Google. "Gemini API Documentation." <a href="https://ai.google.dev/docs" target="_blank">https://ai.google.dev/docs</a></li>
+    
+    <li>Anthropic. "Model Context Protocol (MCP)." <a href="https://modelcontextprotocol.io" target="_blank">https://modelcontextprotocol.io</a></li>
+    
+    <li>ChromaDB. "Vector Database for AI Applications." <a href="https://docs.trychroma.com" target="_blank">https://docs.trychroma.com</a></li>
+    
+    <li>Alpha Cephei. "Vosk Speech Recognition Toolkit." <a href="https://alphacephei.com/vosk/" target="_blank">https://alphacephei.com/vosk/</a></li>
+</ul>
+
+</div>
+</article>
+
+</main>
+
+<footer class="footer">
+    <div class="footer-content">
+        <div class="footer-links">
+            <a href="https://ostapagon.github.io/">Home</a>
+            <a href="https://ostapagon.github.io/posts/">Posts</a>
+            <a href="https://github.com/ostapagon">GitHub</a>
+            <a href="https://twitter.com/ostapagone">Twitter</a>
+            <a href="https://www.linkedin.com/in/ostap-hembara/">LinkedIn</a>
+        </div>
+    </div>
+    <div class="footer-bottom">
+        <p>&copy; 2025 ostapagon. All rights reserved.</p>
+    </div>
+</footer>
+
+<script>
+    let menu = document.getElementById('menu')
+    if (menu) {
+        menu.scrollLeft = localStorage.getItem("menu-scroll-position");
+        menu.onscroll = function () {
+            localStorage.setItem("menu-scroll-position", menu.scrollLeft);
+        }
+    }
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+        anchor.addEventListener("click", function (e) {
+            e.preventDefault();
+            var id = this.getAttribute("href").substr(1);
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView({
+                    behavior: "smooth"
+                });
+            } else {
+                document.querySelector(`[id='${decodeURIComponent(id)}']`).scrollIntoView();
+            }
+            if (id === "top") {
+                history.replaceState(null, null, " ");
+            } else {
+                history.pushState(null, null, `#${id}`);
+            }
+        });
+    });
+
+</script>
+<script>
+    var mybutton = document.getElementById("top-link");
+    window.onscroll = function () {
+        if (document.body.scrollTop > 800 || document.documentElement.scrollTop > 800) {
+            mybutton.style.visibility = "visible";
+            mybutton.style.opacity = "1";
+        } else {
+            mybutton.style.visibility = "hidden";
+            mybutton.style.opacity = "0";
+        }
+    };
+
+</script>
+<script>
+    document.getElementById("theme-toggle").addEventListener("click", () => {
+        if (document.body.className.includes("dark")) {
+            document.body.classList.remove('dark');
+            localStorage.setItem("pref-theme", 'light');
+        } else {
+            document.body.classList.add('dark');
+            localStorage.setItem("pref-theme", 'dark');
+        }
+    })
+
+</script>
+<script>
+    document.querySelectorAll('pre > code').forEach((codeblock) => {
+        const container = codeblock.parentNode.parentNode;
+
+        const copybutton = document.createElement('button');
+        copybutton.classList.add('copy-code');
+        copybutton.innerText = 'copy';
+
+        function copyingDone() {
+            copybutton.innerText = 'copied!';
+            setTimeout(() => {
+                copybutton.innerText = 'copy';
+            }, 2000);
+        }
+
+        copybutton.addEventListener('click', (cb) => {
+            if ('clipboard' in navigator) {
+                navigator.clipboard.writeText(codeblock.textContent);
+                copyingDone();
+                return;
+            }
+
+            const range = document.createRange();
+            range.selectNodeContents(codeblock);
+            const selection = window.getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            try {
+                document.execCommand('copy');
+                copyingDone();
+            } catch (e) { };
+            selection.removeRange(range);
+        });
+
+        if (container.classList.contains("highlight")) {
+            container.appendChild(copybutton);
+        } else if (container.parentNode.firstChild == container) {
+            
+        } else if (codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.nodeName == "TABLE") {
+            
+            codeblock.parentNode.parentNode.parentNode.parentNode.parentNode.appendChild(copybutton);
+        } else {
+            
+            codeblock.parentNode.appendChild(copybutton);
+        }
+    });
+</script>
+
+<!-- Fallback for highlight.js -->
+<script>
+function loadHighlightJSFallback() {
+    console.log('Primary highlight.js failed, loading fallback from CDN');
+    var script = document.createElement('script');
+    script.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js';
+    script.onload = function() {
+        hljs.highlightAll();
+        console.log('Fallback highlight.js loaded and initialized');
+    };
+    script.onerror = function() {
+        console.error('Both primary and fallback highlight.js failed to load');
+    };
+    document.head.appendChild(script);
+    
+    // Also load Python language support
+    var pythonScript = document.createElement('script');
+    pythonScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js';
+    pythonScript.onload = function() {
+        hljs.highlightAll();
+    };
+    document.head.appendChild(pythonScript);
+}
+
+// Additional debugging and manual initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Check if highlight.js loaded
+    if (typeof hljs === 'undefined') {
+        console.log('highlight.js not loaded, attempting fallback');
+        loadHighlightJSFallback();
+    } else {
+        console.log('highlight.js loaded successfully');
+        // Ensure all code blocks are highlighted
+        setTimeout(function() {
+            hljs.highlightAll();
+        }, 100);
+    }
+});
+</script>
+
+
+
+</body>
+</html> 

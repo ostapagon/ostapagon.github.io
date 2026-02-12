@@ -3,8 +3,11 @@
   xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <url>
     <loc>ostapagon blog</loc>
-    <lastmod>2025-05-01T00:00:00+00:00</lastmod>
+    <lastmod>2026-02-07T00:00:00+00:00</lastmod>
     <loc>https://ostapagon.github.io/</loc>
+  </url><url>
+    <loc>https://ostapagon.github.io/posts/2026-02-07-raspberry-ai/</loc>
+    <lastmod>2026-02-07T00:00:00+00:00</lastmod>
   </url><url>
     <loc>https://ostapagon.github.io/search/</loc>
   </url>

@@ -2,7 +2,7 @@ title: Your Blog Title
 description: Your blog description
 author: Your Name
 baseurl: "" # the subpath of your site, e.g. /blog
-url: "" # the base hostname & protocol for your site, e.g. http://example.com
+url: "https://ostapagon.github.io" # the base hostname & protocol for your site
 
 # Google Analytics
 google_analytics_id: ENV["GOOGLE_ANALYTICS_ID"] # Fallback to default for local development
